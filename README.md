@@ -15,3 +15,20 @@ We try to build a command line based version of secret hitler that can be played
 ### Server
 - max 1ish GB memory footprint (just putting this out there)
 
+
+ states
+ 
+pre_game
+identity_assignment
+election
+    override_vote
+legislative_session
+discussion
+executive_action
+    execution
+    investigate_loyality
+    policy_peek
+     "veto power?"
+execution_vote
+execution
+game_over
