@@ -1,0 +1,6 @@
+- name: "connect"
+  user_name: "lukas"
+  duration: 1.3
+- name: "quit"
+  user_name: "lukas"
+  duration: 2.0
