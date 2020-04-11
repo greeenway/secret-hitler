@@ -1,0 +1,7 @@
+digraph Traffic {
+Green -> Orange [ label = "Advance" ];
+Orange -> Red [ label = "Advance" ];
+Red -> Green [ label = "Advance" ];
+Green -> Green [ label = "PassCar" ];
+Green -> Orange [ label = "PassCar" ];
+}
