@@ -1,9 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-use super::testing;
-
-mod message;
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Message {

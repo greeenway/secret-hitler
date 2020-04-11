@@ -1,14 +1,11 @@
-// mod testing {
 use std::fs;
-
-
-// use crate::message::message;
-
 use yaml_rust::{YamlLoader};
-use message;
+
+use super::message;
+
 
 #[derive(Debug)]
-struct MessageAndDuration {
+pub struct MessageAndDuration {
     pub message: message::Message,
     pub duration: f64,
 }
