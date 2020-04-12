@@ -4,18 +4,19 @@ use std::net::TcpStream;
 use std::env;
 
 mod testing;
-mod message;
+
+use common;
 
 // use message;
 
 fn main() -> std::io::Result<()> {
     let mut stream = TcpStream::connect("127.0.0.1:34254")?;
 
-    let mymessage = message::Message::Connect{user_name: String::from("Lukas")};
+    let mymessage = common::Message::Connect{user_name: String::from("Lukas")};
     let mut serialized = serde_json::to_vec(&mymessage).unwrap();
     let _result = stream.write(&mut serialized);
 
-    let mymessage = message::Message::Quit{user_name: String::from("Lukas")};
+    let mymessage = common::Message::Quit{user_name: String::from("Lukas")};
     let mut serialized = serde_json::to_vec(&mymessage).unwrap();
     let _result = stream.write(&mut serialized);
 

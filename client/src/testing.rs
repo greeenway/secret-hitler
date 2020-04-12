@@ -1,12 +1,12 @@
 use std::fs;
 use yaml_rust::{YamlLoader};
 
-use super::message;
+use common;
 
 
 #[derive(Debug)]
 pub struct MessageAndDuration {
-    pub message: message::Message,
+    pub message: common::Message,
     pub duration: f64,
 }
 
@@ -38,9 +38,9 @@ pub fn read_user_actions(file_name: &str) -> std::io::Result<Vec<MessageAndDurat
 
         let state = state_name.unwrap();
 
-        let message: message::Message = match state.as_str() {
-            "connect" => message::Message::Connect{ user_name: user_name.unwrap().clone() },
-            "quit" => message::Message::Quit{ user_name: user_name.unwrap().clone() },
+        let message: common::Message = match state.as_str() {
+            "connect" => common::Message::Connect{ user_name: user_name.unwrap().clone() },
+            "quit" => common::Message::Quit{ user_name: user_name.unwrap().clone() },
             _ => panic!("unknown state: {} found. ", state),
         };
 
