@@ -1,9 +1,13 @@
 use std::io::prelude::*;
 
+use rand::seq::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::io::Write;
 use std::net::TcpListener;
+use std::sync::Mutex;
+use std::thread;
 
 use std::env;
 
@@ -14,10 +18,23 @@ extern crate machine;
 extern crate rand;
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum PlayerIdentity {
+    Liberal,
+    Fascist,
+    Hitler,
+    Undefined,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Player {
+    name: String,
+    identity: PlayerIdentity,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct GameInfo {
-    player_names: Vec<String>,
+    players: Vec<Player>,
     player_count: usize,
-    players_are_fascist: Vec<bool>,
     president_idx: usize,
     chancellor_idx: usize,
     policies_fascist_count: u8,
@@ -45,10 +62,13 @@ machine!(
 pub struct Advance;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Fail;
+#[derive(Clone, Debug, PartialEq)]
+pub struct PlayerJoin;
 
 transitions!(GameState,
     [
       (PreGame, Advance) => IdentityAssignment,
+      (PreGame, Player) => PreGame,
       (IdentityAssignment, Advance) => Nomination,
       (Nomination, Advance) => Election,
       (Election, Advance) => PolicySelectionPresident,
@@ -61,9 +81,15 @@ transitions!(GameState,
     ]
   );
 
+methods!(GameState,
+    [
+    PreGame => get game_info: GameInfo
+    ]
+  );
+
 impl PreGame {
     pub fn on_advance(mut self, _: Advance) -> IdentityAssignment {
-        self.game_info.player_count = self.game_info.player_names.len();
+        self.game_info.player_count = self.game_info.players.len();
 
         println!("{:?}", self.game_info);
 
@@ -71,14 +97,50 @@ impl PreGame {
             game_info: self.game_info,
         }
     }
+
+    pub fn on_player(mut self, input: Player) -> PreGame {
+        self.game_info.players.push(input);
+
+        PreGame {
+            game_info: self.game_info,
+        }
+    }
 }
 
 impl IdentityAssignment {
     pub fn on_advance(mut self, _: Advance) -> Nomination {
+        /* # players | # liberals
+            5           3
+            6-7         4
+            8-9         5
+            10          6
+        */
+
+        // Initially set all to fascist
+        for i in 0..self.game_info.player_count {
+            self.game_info.players[i].identity = PlayerIdentity::Fascist;
+        }
+
+        // Set some to liberal and one to Hitler
+        let liberalCount = match self.game_info.player_count {
+            5 => 3,
+            6 | 7 => 4,
+            8 | 9 => 5,
+            10 => 6,
+            _ => panic!("Invalid player count"),
+        };
+
         let mut rng = rand::thread_rng();
-        // TODO: correct distribution!
-        for _i in 0..self.game_info.player_count {
-            self.game_info.players_are_fascist.push(rng.gen())
+
+        let random_idxs =
+            rand::seq::index::sample(&mut rng, self.game_info.player_count - 1, liberalCount + 1);
+
+        for (i, idx) in random_idxs.iter().enumerate() {
+            if i < liberalCount {
+                self.game_info.players[idx].identity = PlayerIdentity::Liberal;
+            } else {
+                self.game_info.players[idx].identity = PlayerIdentity::Hitler;
+            }
         }
 
         self.game_info.round_count = 1;
@@ -166,7 +228,9 @@ impl Discussion {
 
 impl RoundOver {
     pub fn on_advance(mut self, _: Advance) -> GameState {
-        if (self.game_info.policies_fascist_count == 6) || (self.game_info.policies_liberal_count == 5) {
+        if (self.game_info.policies_fascist_count == 6)
+            || (self.game_info.policies_liberal_count == 5)
+        {
             GameState::gameover(self.game_info)
         } else {
             self.game_info.round_count += 1;
@@ -184,20 +248,17 @@ enum Message {
 }
 
 fn main() -> std::io::Result<()> {
-
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         panic!("usage: cmd [configfile.yaml]");
     }
 
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
-    let listener = TcpListener::bind(config.server_listen_address_and_port).unwrap();
 
     // Initialize game info
     let mut game_info = GameInfo {
-        player_names: vec![],
+        players: vec![],
         player_count: 0,
-        players_are_fascist: vec![],
         president_idx: 0,
         chancellor_idx: 0,
         policies_liberal_count: 0,
@@ -205,70 +266,145 @@ fn main() -> std::io::Result<()> {
         round_count: 0,
     };
 
-    game_info.player_names.push(String::from("Lukas"));
-    game_info.player_names.push(String::from("Val"));
-    game_info.player_names.push(String::from("Andi"));
-    game_info.player_names.push(String::from("Tajna"));
-    game_info.player_names.push(String::from("Stefan"));
-    game_info.player_names.push(String::from("Marlene"));
-    game_info.player_names.push(String::from("Markus"));
+    println!("{:?}", game_info);
 
     // Initialize game state
-    let mut game_state = GameState::PreGame(PreGame { game_info });
+    // let mut game_state = GameState::PreGame(PreGame { game_info });
+    let mut game_state_mutex = Mutex::new(GameState::PreGame(PreGame { game_info }));
+    {
+        let game_state = game_state_mutex.lock().unwrap();
+        let info1 = game_state.game_info().clone();
+
+        // advance
+        println!("{:?}", info1);
+    }
+
+    // match game_state {
+    //     GameState::PreGame => game_state.game_info(),
+    //     _ => panic!("oh noes!"),
+    // }
 
     // TODO: just testing
-    game_state = game_state.on_advance(Advance);
-    game_state = game_state.on_advance(Advance);
+    // game_state = game_state.on_advance(Advance);
+    // game_state = game_state.on_advance(Advance);
+
+    let listener = TcpListener::bind(config.server_listen_address_and_port).unwrap();
+    println!("listening started, ready to accept");
+
+    thread::spawn(|| {
+        // mutex!
+        // apply game logic
+        // debug: wait 1s
+        // debug: print players joined
+    });
 
     for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                println!("new client!");
+        thread::spawn(|| {
+            let stream = stream.unwrap();
+            let mut de = serde_json::Deserializer::from_reader(stream);
 
-                // let mut buffer: Vec<u8> = Vec::new();
+            loop {
+                let result = common::Message::deserialize(&mut de);
 
-                // // stream.write(&[1])?;
-                // stream.read(&mut buffer)?;
+                if let Ok(message) = result {
+                    println!("{:?}", message);
 
-                let mut de = serde_json::Deserializer::from_reader(stream);
+                    match message {
+                        common::Message::Connect { user_name } => {
+                            println!("user {} received!", user_name);
 
-                loop {
-                    // let read_bytes = stream.peek(&mut [0, 1000]).unwrap();
+                            // let mut lock = game_state_mutex.try_lock();
+                            // if let Ok(ref mut mutex) = lock {
+                            //     mutex = mutex.on_player(Player {
+                            //         name: user_name,
+                            //         identity: PlayerIdentity::Undefined,
+                            //     });
+                            // } else {
+                            //     println!("try_lock failed");
+                            // }
 
-                    let result = Message::deserialize(&mut de);
-
-                    if let Ok(message) = result {
-                        println!("{:?}", message);
-
-                        match message {
-                            Message::Connect { user_name } => {
-                                println!("user {} received!", user_name)
+                            {
+                                let mut num = game_state_mutex.lock().unwrap();
+                                *num = num.on_player(Player {
+                                        name: user_name,
+                                        identity: PlayerIdentity::Undefined,
+                                    });
                             }
-                            _ => println!("something else was received!"),
+
+                            // let game_state = game_state_mutex.lock().unwrap();
+                            // // let info1 = game_state.game_info().clone();
+                            // let _a = game_state.on_player(Player {
+                            //     name: user_name,
+                            //     identity: PlayerIdentity::Undefined,
+                            // });
                         }
-                    } else {
-                        // println!("didn't get anything!");
+                        _ => println!("something else was received!"),
                     }
-
-                    // match result {
-                    //     Result::Message(message) => {
-                    //         println!("{:?}", message);
-
-                    //         match message {
-                    //             Message::Connect{user_name} => println!("user {} received!", user_name),
-                    //             _ => println!("something else was received!"),
-                    //         }
-                    //     },
-                    //     // serde_json::error::Error
-                    //     _ => {
-                    //         println!("didn't get anything!");
-                    //     }
-                    // }
+                } else {
+                    // println!("didn't get anything!");
                 }
+
+                // lock game state (mutex)
+                // we need game state here
+                // read action
+                // big match case
+                // depending on state
+                // apply action to game state
+                // send actions to clients
+                //release mutex with {}
             }
-            Err(_e) => { /* connection failed */ }
-        }
+        });
     }
+
+    // for stream in listener.incoming() {
+    //     match stream {
+    //         Ok(stream) => {
+    //             println!("new client!");
+
+    //             // let mut buffer: Vec<u8> = Vec::new();
+
+    //             // // stream.write(&[1])?;
+    //             // stream.read(&mut buffer)?;
+
+    //             let mut de = serde_json::Deserializer::from_reader(stream);
+
+    //             loop {
+    //                 // let read_bytes = stream.peek(&mut [0, 1000]).unwrap();
+
+    //                 let result = Message::deserialize(&mut de);
+
+    //                 if let Ok(message) = result {
+    //                     println!("{:?}", message);
+
+    //                     match message {
+    //                         Message::Connect { user_name } => {
+    //                             println!("user {} received!", user_name)
+    //                         }
+    //                         _ => println!("something else was received!"),
+    //                     }
+    //                 } else {
+    //                     // println!("didn't get anything!");
+    //                 }
+
+    //                 // match result {
+    //                 //     Result::Message(message) => {
+    //                 //         println!("{:?}", message);
+
+    //                 //         match message {
+    //                 //             Message::Connect{user_name} => println!("user {} received!", user_name),
+    //                 //             _ => println!("something else was received!"),
+    //                 //         }
+    //                 //     },
+    //                 //     // serde_json::error::Error
+    //                 //     _ => {
+    //                 //         println!("didn't get anything!");
+    //                 //     }
+    //                 // }
+    //             }
+    //         }
+    //         Err(_e) => { /* connection failed */ }
+    //     }
+    // }
 
     Ok(())
 }

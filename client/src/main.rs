@@ -8,10 +8,7 @@ mod testing;
 // extern crate common;
 // use common::another;
 
-
-
 fn main() -> std::io::Result<()> {
-
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
         panic!("usage: cmd [configfile.yaml]");
@@ -20,9 +17,13 @@ fn main() -> std::io::Result<()> {
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
     let mut stream = TcpStream::connect(config.server_address_and_port)?;
 
-    // let mymessage = common::Message::Connect{user_name: String::from("Lukas")};
-    // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
-    // let _result = stream.write(&mut serialized);
+    let mymessage = common::Message::Connect {
+        user_name: String::from("Lukas"),
+    };
+    let mut serialized = serde_json::to_vec(&mymessage).unwrap();
+    let _result = stream.write(&mut serialized);
+
+    loop {}
 
     // let mymessage = common::Message::Quit{user_name: String::from("Lukas")};
     // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
@@ -41,7 +42,5 @@ fn main() -> std::io::Result<()> {
     //     println!("duration: {}s", message_and_duration.duration);
     // }
 
-
     Ok(())
 }
-

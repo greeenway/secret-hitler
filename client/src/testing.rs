@@ -1,8 +1,7 @@
 use std::fs;
-use yaml_rust::{YamlLoader};
+use yaml_rust::YamlLoader;
 
 use common;
-
 
 #[derive(Debug)]
 pub struct MessageAndDuration {
@@ -11,11 +10,9 @@ pub struct MessageAndDuration {
 }
 
 pub fn read_user_actions(file_name: &str) -> std::io::Result<Vec<MessageAndDuration>> {
-
     let file_content: String = fs::read_to_string(file_name)?.parse().unwrap();
     let yaml = YamlLoader::load_from_str(&file_content).unwrap();
     let root = yaml.first().unwrap();
-
 
     let parsed_actions = root.clone().into_vec().unwrap();
     let mut user_actions: Vec<MessageAndDuration> = Vec::new();
@@ -35,22 +32,22 @@ pub fn read_user_actions(file_name: &str) -> std::io::Result<Vec<MessageAndDurat
             duration = Some(f.parse::<f64>().unwrap());
         }
 
-
         let state = state_name.unwrap();
 
         let message: common::Message = match state.as_str() {
-            "connect" => common::Message::Connect{ user_name: user_name.unwrap().clone() },
-            "quit" => common::Message::Quit{ user_name: user_name.unwrap().clone() },
+            "connect" => common::Message::Connect {
+                user_name: user_name.unwrap().clone(),
+            },
+            "quit" => common::Message::Quit {
+                user_name: user_name.unwrap().clone(),
+            },
             _ => panic!("unknown state: {} found. ", state),
         };
 
-
-        user_actions.push(
-            MessageAndDuration {
-                message: message,
-                duration: duration.unwrap(),
-            }
-        );
+        user_actions.push(MessageAndDuration {
+            message: message,
+            duration: duration.unwrap(),
+        });
     }
 
     Ok(user_actions)
