@@ -2,6 +2,19 @@
 
 We try to build a command line based version of secret hitler that can be played over the internet. The project is split in a client using some ncurses like interface and a server connecting the clients.
 
+## usage
+
+Start the server
+```
+cargo run --bin server local.yaml
+```
+
+Start the client
+```
+cargo run --bin client local.yaml
+```
+
+
 ## Required features / Open Questions
 
 ### Both
