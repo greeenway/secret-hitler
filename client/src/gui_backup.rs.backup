@@ -1,0 +1,131 @@
+//! Demonstrates how to block read events.
+//!
+//! cargo run --example event-read
+
+use std::io::{stdout, Write};
+use std::time::Duration;
+
+use std::io::{BufReader,BufRead};
+use std::fs::File;
+use std::fs;
+
+use crossterm::{
+    cursor::position,
+    event::{read, poll, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode},
+    Result,
+    queue,
+    style::{self, Colorize, Print},
+    terminal,
+    cursor,
+    terminal::ClearType
+};
+
+
+
+const HELP: &str = r#"Blocking read()
+ - Keyboard, mouse and terminal resize events enabled
+ - Hit "c" to print current cursor position
+ - Use Esc to quit
+"#;
+
+
+
+fn main() -> Result<()> {
+    //println!("{}", HELP);
+
+    enable_raw_mode()?;
+    // println!("                         _____    _____    _____    _____    _____    _____");
+    // println!("                        |     |  |     |  |     |  |     |  |     |  |     |");
+    // println!("                        |     |  |     |  |     |  |     |  |     |  |     |");
+    let file = File::open("board.txt").unwrap();
+    // let board_lines: Vec<String> = Vec::new();
+
+    let board_lines: Vec<String> = BufReader::new(file)
+        .lines()
+        .map(|l| l.expect("Could not parse line"))
+        .collect();
+    
+
+
+
+    // let board_lines = BufReader::new(file).lines();
+
+    // let board = fs::read_to_string("board.txt").unwrap();
+
+    
+
+    
+    
+    let mut stdout = stdout();
+    execute!(stdout, EnableMouseCapture)?;
+
+    let mut x = 20;
+    let mut y = 10;
+    let mut show_text = true;
+    loop {
+        
+
+        // println!("Event: {:?}\r", event);
+        
+        queue!(
+            stdout,
+            style::ResetColor,
+            terminal::Clear(ClearType::All),
+            cursor::Hide,
+            cursor::MoveTo(0, 0)
+        )?;
+        // println!("{}", background);
+        //println!("x");
+        // println!("{}", board);
+        y = 0;
+        for line in board_lines.iter() {
+            execute!(stdout, cursor::MoveTo(0, y));
+            write!(stdout,  "{}\n", line);
+            y += 1;
+        }
+
+        if show_text {
+            queue!(
+                stdout,
+                cursor::MoveTo(10, 5),
+                style::PrintStyledContent( "Hello World!".magenta()),
+                Print("hello")
+            )?;
+        }
+        
+        stdout.flush();
+
+        // Blocking read
+        // let event = poll(Duration::from_millis(100))?;
+        let event = read()?;
+        
+        if event == Event::Key(KeyCode::Char('c').into()) {
+            println!("Cursor position: {:?}\r", position());
+        }
+
+        if event == Event::Key(KeyCode::Up.into()) {
+            show_text = !show_text;
+        }
+        if event == Event::Key(KeyCode::Down.into()) {
+            y +=1;
+        }
+        if event == Event::Key(KeyCode::Left.into()) {
+            x -=1;
+        }
+        if event == Event::Key(KeyCode::Right.into()) {
+            x +=1;
+        }
+
+
+
+        if event == Event::Key(KeyCode::Esc.into()) {
+            break;
+        }
+    }
+
+    execute!(stdout, DisableMouseCapture)?;
+
+    disable_raw_mode()
+}
