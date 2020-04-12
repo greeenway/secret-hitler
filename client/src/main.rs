@@ -5,33 +5,36 @@ use std::env;
 
 mod testing;
 
-use common;
+extern crate common;
+use common::another;
 
-// use message;
+
 
 fn main() -> std::io::Result<()> {
-    let mut stream = TcpStream::connect("127.0.0.1:34254")?;
+    another::Hello {x:3};
 
-    let mymessage = common::Message::Connect{user_name: String::from("Lukas")};
-    let mut serialized = serde_json::to_vec(&mymessage).unwrap();
-    let _result = stream.write(&mut serialized);
+    // let mut stream = TcpStream::connect("127.0.0.1:34254")?;
 
-    let mymessage = common::Message::Quit{user_name: String::from("Lukas")};
-    let mut serialized = serde_json::to_vec(&mymessage).unwrap();
-    let _result = stream.write(&mut serialized);
+    // let mymessage = common::Message::Connect{user_name: String::from("Lukas")};
+    // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
+    // let _result = stream.write(&mut serialized);
 
-    // let args: Vec<String> = env::args().collect();
+    // let mymessage = common::Message::Quit{user_name: String::from("Lukas")};
+    // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
+    // let _result = stream.write(&mut serialized);
 
-    // if args.len() != 2 {
-    //     panic!("usage: cmd [filename.yaml]");
-    // }
+    let args: Vec<String> = env::args().collect();
 
-    // let user_actions = testing::read_user_actions(&args[1]).unwrap();
+    if args.len() != 2 {
+        panic!("usage: cmd [filename.yaml]");
+    }
 
-    // for message_and_duration in user_actions.iter() {
-    //     println!("{:?}", message_and_duration.message);
-    //     println!("duration: {}s", message_and_duration.duration);
-    // }
+    let user_actions = testing::read_user_actions(&args[1]).unwrap();
+
+    for message_and_duration in user_actions.iter() {
+        println!("{:?}", message_and_duration.message);
+        println!("duration: {}s", message_and_duration.duration);
+    }
 
 
     Ok(())
