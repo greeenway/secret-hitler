@@ -1,0 +1,3 @@
+server_address: "shovels.eu"
+server_listen: "0.0.0.0"
+port: "54327"

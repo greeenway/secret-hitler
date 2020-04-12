@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::net::TcpListener;
 
+use std::env;
+
+extern crate common;
+
 #[macro_use]
 extern crate machine;
 extern crate rand;
@@ -180,7 +184,14 @@ enum Message {
 }
 
 fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:34254").unwrap();
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        panic!("usage: cmd [configfile.yaml]");
+    }
+
+    let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
+    let listener = TcpListener::bind(config.server_listen_address_and_port).unwrap();
 
     // Initialize game info
     let mut game_info = GameInfo {
