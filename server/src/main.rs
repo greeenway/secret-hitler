@@ -1,12 +1,12 @@
-use std::io::prelude::*;
+// use std::io::prelude::*;
 
-use rand::seq::SliceRandom;
+// use rand::seq::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::io::Write;
+// use std::io::Write;
 use std::net::TcpListener;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use std::env;
@@ -98,12 +98,14 @@ impl PreGame {
         }
     }
 
-    pub fn on_player(mut self, input: Player) -> PreGame {
-        self.game_info.players.push(input);
+    pub fn on_player(self, input: Player) -> PreGame {
+        // self.game_info.players.push(input);
 
-        PreGame {
-            game_info: self.game_info,
-        }
+        let mut next_state = PreGame {
+            game_info: self.game_info.clone(),
+        };
+        next_state.game_info.players.push(input);
+        next_state
     }
 }
 
@@ -200,8 +202,8 @@ impl Chaos {
 // TODO: fix
 impl PolicySelectionPresident {
     pub fn on_advance(self, _: Advance) -> PolicySelectionChancellor {
-        let mut rng = rand::thread_rng();
-        let rand_num = rng.gen_range(0, 4);
+        // let mut rng = rand::thread_rng();
+        // let rand_num = rng.gen_range(0, 4);
         PolicySelectionChancellor {
             // TODO: consider distribution of fascist/liberal policies
             //fascistPoliciesCount = rand_num
@@ -256,7 +258,7 @@ fn main() -> std::io::Result<()> {
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
 
     // Initialize game info
-    let mut game_info = GameInfo {
+    let game_info = GameInfo {
         players: vec![],
         player_count: 0,
         president_idx: 0,
@@ -270,10 +272,11 @@ fn main() -> std::io::Result<()> {
 
     // Initialize game state
     // let mut game_state = GameState::PreGame(PreGame { game_info });
-    let mut game_state_mutex = Mutex::new(GameState::PreGame(PreGame { game_info }));
+    // let mut game_state_mutex = Mutex::new(GameState::PreGame(PreGame { game_info }));
+    let game_state_mutex = Arc::new(Mutex::new(GameState::PreGame(PreGame { game_info })));
     {
         let game_state = game_state_mutex.lock().unwrap();
-        let info1 = game_state.game_info().clone();
+        let info1 = game_state.game_info();
 
         // advance
         println!("{:?}", info1);
@@ -299,7 +302,8 @@ fn main() -> std::io::Result<()> {
     });
 
     for stream in listener.incoming() {
-        thread::spawn(|| {
+        let game_mutex = Arc::clone(&game_state_mutex);
+        thread::spawn(move || {
             let stream = stream.unwrap();
             let mut de = serde_json::Deserializer::from_reader(stream);
 
@@ -313,19 +317,10 @@ fn main() -> std::io::Result<()> {
                         common::Message::Connect { user_name } => {
                             println!("user {} received!", user_name);
 
-                            // let mut lock = game_state_mutex.try_lock();
-                            // if let Ok(ref mut mutex) = lock {
-                            //     mutex = mutex.on_player(Player {
-                            //         name: user_name,
-                            //         identity: PlayerIdentity::Undefined,
-                            //     });
-                            // } else {
-                            //     println!("try_lock failed");
-                            // }
-
                             {
-                                let mut num = game_state_mutex.lock().unwrap();
-                                *num = num.on_player(Player {
+                                let mut game_mutex = game_mutex.lock().unwrap();
+
+                                *game_mutex = game_mutex.on_player(Player {
                                         name: user_name,
                                         identity: PlayerIdentity::Undefined,
                                     });
