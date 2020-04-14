@@ -270,6 +270,12 @@ fn main() -> std::io::Result<()> {
 
     println!("{:?}", game_info);
 
+    let game_state = GameState::PreGame(PreGame{game_info: game_info});
+    let game_state = game_state.on_advance(Advance);
+    let mut gi = game_state.game_info().unwrap().clone();
+    gi.player_count = 12;
+    let game_state = GameState::IdentityAssignment(IdentityAssignment{game_info:gi});
+
     // Initialize game state
     // let mut game_state = GameState::PreGame(PreGame { game_info });
     // let mut game_state_mutex = Mutex::new(GameState::PreGame(PreGame { game_info }));

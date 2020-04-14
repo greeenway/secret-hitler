@@ -45,3 +45,13 @@ executive_action
 execution_vote
 execution
 game_over
+
+
+game state ideas
+
+1) user sends ClientMessage im thread
+<!-- 2) game_state = game_state.process(client_message) // can shift to next state in enum   -->
+2) thread sends message to main channel
+3) update states
+3) return channel?
+4) server sends ServerMessage (contains: client state, including additional info)
