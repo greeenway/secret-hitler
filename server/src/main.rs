@@ -6,8 +6,10 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 // use std::io::Write;
 use std::net::TcpListener;
-use std::sync::{Arc, Mutex};
+// use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
 use std::thread;
+
 
 use std::env;
 
@@ -243,11 +245,16 @@ impl RoundOver {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-enum Message {
-    Connect { user_name: String },
-    Quit { user_name: String },
+struct ClientMessageInfo {
+    threadId: u32,
+    message: common::ClientMessage,
 }
+
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// pub enum ServerMessage {
+//     Hello { message: String },
+//     Quit {user_name: String},
+// }
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -270,23 +277,13 @@ fn main() -> std::io::Result<()> {
 
     println!("{:?}", game_info);
 
-    let game_state = GameState::PreGame(PreGame{game_info: game_info});
-    let game_state = game_state.on_advance(Advance);
-    let mut gi = game_state.game_info().unwrap().clone();
-    gi.player_count = 12;
-    let game_state = GameState::IdentityAssignment(IdentityAssignment{game_info:gi});
+    // let game_state = GameState::PreGame(PreGame{game_info: game_info});
+    // let game_state = game_state.on_advance(Advance);
+    // let mut gi = game_state.game_info().unwrap().clone();
+    // let game_state = GameState::IdentityAssignment(IdentityAssignment{game_info:gi});
 
     // Initialize game state
-    // let mut game_state = GameState::PreGame(PreGame { game_info });
-    // let mut game_state_mutex = Mutex::new(GameState::PreGame(PreGame { game_info }));
-    let game_state_mutex = Arc::new(Mutex::new(GameState::PreGame(PreGame { game_info })));
-    {
-        let game_state = game_state_mutex.lock().unwrap();
-        let info1 = game_state.game_info();
 
-        // advance
-        println!("{:?}", info1);
-    }
 
     // match game_state {
     //     GameState::PreGame => game_state.game_info(),
@@ -300,47 +297,60 @@ fn main() -> std::io::Result<()> {
     let listener = TcpListener::bind(config.server_listen_address_and_port).unwrap();
     println!("listening started, ready to accept");
 
-    thread::spawn(|| {
+    let (tx_to_state, rx_from_thread) = mpsc::channel::<ClientMessageInfo>();
+    // let mpsc::channel()
+
+    thread::spawn( move || {
         // mutex!
         // apply game logic
         // debug: wait 1s
         // debug: print players joined
+        loop {
+            let messageInfo = rx_from_thread.recv().unwrap();
+
+            match messageInfo.message {
+                common::ClientMessage::Connect { user_name } => {
+                    println!("server main worker got: user {} received! from thread id: {}", user_name, messageInfo.threadId);
+                },
+                _ => println!("something else was received!"),
+            }
+            
+        }
     });
 
-    for stream in listener.incoming() {
-        let game_mutex = Arc::clone(&game_state_mutex);
+    for (id, stream) in listener.incoming().enumerate() {
+        let tx_to_state = tx_to_state.clone();
         thread::spawn(move || {
             let stream = stream.unwrap();
             let mut de = serde_json::Deserializer::from_reader(stream);
 
             loop {
-                let result = common::Message::deserialize(&mut de);
+                let result = common::ClientMessage::deserialize(&mut de);
 
                 if let Ok(message) = result {
                     println!("{:?}", message);
 
-                    match message {
-                        common::Message::Connect { user_name } => {
-                            println!("user {} received!", user_name);
+                    let _result = tx_to_state.send(ClientMessageInfo {
+                        message: message,
+                        threadId: id as u32,
+                    });
 
-                            {
-                                let mut game_mutex = game_mutex.lock().unwrap();
+                    // match message {
+                    //     common::ClientMessage::Connect { user_name } => {
+                    //         println!("user {} received!", user_name);
 
-                                *game_mutex = game_mutex.on_player(Player {
-                                        name: user_name,
-                                        identity: PlayerIdentity::Undefined,
-                                    });
-                            }
 
-                            // let game_state = game_state_mutex.lock().unwrap();
-                            // // let info1 = game_state.game_info().clone();
-                            // let _a = game_state.on_player(Player {
-                            //     name: user_name,
-                            //     identity: PlayerIdentity::Undefined,
-                            // });
-                        }
-                        _ => println!("something else was received!"),
-                    }
+                    //         sender.send(common::Message::Connect { user_name }).unwrap();
+
+                    //         // let game_state = game_state_mutex.lock().unwrap();
+                    //         // // let info1 = game_state.game_info().clone();
+                    //         // let _a = game_state.on_player(Player {
+                    //         //     name: user_name,
+                    //         //     identity: PlayerIdentity::Undefined,
+                    //         // });
+                    //     }
+                    //     _ => println!("something else was received!"),
+                    // }
                 } else {
                     // println!("didn't get anything!");
                 }

@@ -5,7 +5,7 @@ use common;
 
 #[derive(Debug)]
 pub struct MessageAndDuration {
-    pub message: common::Message,
+    pub message: common::ClientMessage,
     pub duration: f64,
 }
 
@@ -34,11 +34,11 @@ pub fn read_user_actions(file_name: &str) -> std::io::Result<Vec<MessageAndDurat
 
         let state = state_name.unwrap();
 
-        let message: common::Message = match state.as_str() {
-            "connect" => common::Message::Connect {
+        let message: common::ClientMessage = match state.as_str() {
+            "connect" => common::ClientMessage::Connect {
                 user_name: user_name.unwrap().clone(),
             },
-            "quit" => common::Message::Quit {
+            "quit" => common::ClientMessage::Quit {
                 user_name: user_name.unwrap().clone(),
             },
             _ => panic!("unknown state: {} found. ", state),

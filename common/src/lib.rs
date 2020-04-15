@@ -10,9 +10,15 @@ pub fn say() -> another::Hello {
     another::Hello{x:2}
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub enum Message {
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ClientMessage {
     Connect { user_name: String },
+    Quit {user_name: String},
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ServerMessage {
+    Hello { message: String },
     Quit {user_name: String},
 }
 

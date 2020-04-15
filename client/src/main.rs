@@ -17,7 +17,7 @@ fn main() -> std::io::Result<()> {
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
     let mut stream = TcpStream::connect(config.server_address_and_port)?;
 
-    let mymessage = common::Message::Connect {
+    let mymessage = common::ClientMessage::Connect {
         user_name: String::from("Lukas"),
     };
     let mut serialized = serde_json::to_vec(&mymessage).unwrap();
