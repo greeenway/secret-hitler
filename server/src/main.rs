@@ -299,12 +299,22 @@ fn main() -> std::io::Result<()> {
 
     let (tx_to_state, rx_from_thread) = mpsc::channel::<ClientMessageInfo>();
     // let mpsc::channel()
+    
+    let mut receivers : Vec<&mpsc::Receiver::<ClientMessageInfo>> = Vec::new();
+    let mut sender : Vec<mpsc::Sender::<ClientMessageInfo>> = Vec::new();
+
+    for _ in 0..10 {
+        let (tx, rx) = mpsc::channel::<ClientMessageInfo>();
+        receivers.push(&rx);
+        sender.push(tx);
+    }
 
     thread::spawn( move || {
         // mutex!
         // apply game logic
         // debug: wait 1s
         // debug: print players joined
+        let tx_to_threads = sender;
         loop {
             let messageInfo = rx_from_thread.recv().unwrap();
 
@@ -322,6 +332,7 @@ fn main() -> std::io::Result<()> {
         let tx_to_state = tx_to_state.clone();
         thread::spawn(move || {
             let stream = stream.unwrap();
+            let rx_from_main = receivers.get(id);
             let mut de = serde_json::Deserializer::from_reader(stream);
 
             loop {
