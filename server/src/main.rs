@@ -2,6 +2,7 @@ use std::net::{TcpListener};
 use std::sync::{Arc, Mutex};
 
 use std::thread;
+use std::env;
 
 mod state;
 mod communicate;
@@ -9,7 +10,13 @@ mod state_logic;
 
 
 fn main() -> std::io::Result<()> {
-    
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        panic!("usage: cmd [configfile.yaml]");
+    }
+
+    let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
+
     let data = Arc::new(Mutex::new(
         state::GameState {
             state: state::State::Pregame,
@@ -23,8 +30,8 @@ fn main() -> std::io::Result<()> {
         let _result = state_logic::handle_state(state_data);
     });
 
-
-    let listener = TcpListener::bind("127.0.0.1:8888").unwrap();
+    println!("Listening on {}...", config.server_listen_address_and_port);
+    let listener = TcpListener::bind(config.server_listen_address_and_port).unwrap();
     for (id, stream) in listener.incoming().enumerate() {
 
         let stream = stream.unwrap();

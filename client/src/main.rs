@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::net::TcpStream;
 
+use std::time;
 use std::env;
 
 mod testing;
@@ -15,15 +16,46 @@ fn main() -> std::io::Result<()> {
     }
 
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
-    let mut stream = TcpStream::connect(config.server_address_and_port)?;
+    let stream = TcpStream::connect(config.server_address_and_port)?;
 
-    let mymessage = common::ClientMessage::Connect {
-        user_name: String::from("Lukas"),
-    };
-    let mut serialized = serde_json::to_vec(&mymessage).unwrap();
-    let _result = stream.write(&mut serialized);
+    let mut write_stream = stream.try_clone()?;
+    let _ = stream.set_read_timeout(Some(time::Duration::from_millis(200)));
+    // let de = serde_json::Deserializer::from_reader(stream);
 
-    loop {}
+    let message = common::ClientMessage::Hello;
+    let mut serialized = serde_json::to_vec(&message).unwrap();
+    let _result = write_stream.write(&mut serialized);
+
+    // loop {
+        
+    //     let result = GameState::deserialize(&mut de);
+    //     if let Ok(state) = result {
+    //         println!("\nstate received:");
+    //         println!("{:?}", state);
+
+    //         let message = ClientMessage::Hello;
+    //         let mut serialized = serde_json::to_vec(&message).unwrap();
+    //         let _result = write_stream.write(&mut serialized);
+    //         let _result = write_stream.write(&mut serialized);
+    //         // let _result = write_stream.write(&mut serialized);
+    //     } else {
+    //         print!(".");
+            
+            
+    //     }
+    //     thread::sleep(time::Duration::from_millis(500));
+    // }
+
+
+    // let mymessage = common::ClientMessage::Connect {
+    //     user_name: String::from("Lukas"),
+    // };
+    // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
+    // let _result = stream.write(&mut serialized);
+
+    // loop {}
+
+
 
     // let mymessage = common::Message::Quit{user_name: String::from("Lukas")};
     // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
