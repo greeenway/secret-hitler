@@ -14,6 +14,7 @@ pub fn say() -> another::Hello {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum ClientMessage {
     Hello,
+    Connect {name: String},
     Quit,
 }
 
