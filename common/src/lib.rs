@@ -27,6 +27,7 @@ pub enum ClientMessage {
 pub enum ServerMessage {
     Hello { message: String },
     Quit {user_name: String},
+    Users {users: Vec<String>},
 }
 
 pub struct Configuration {

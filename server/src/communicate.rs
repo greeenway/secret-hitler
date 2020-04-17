@@ -27,7 +27,7 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
                 // parse all messages from client
                 let result = common::ClientMessage::deserialize(&mut de);
                 if let Ok(message) = result {
-                    println!("got back {:?}", message);
+                    println!("client sent: {:?}", message);
                     crate::state::update_state(&mut *data, message);
                 } else {
                     break;
@@ -37,7 +37,9 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
             // send state to client
             data.players.push(id as i32 + 1);
 
-            let mut serialized = serde_json::to_vec(&*data).unwrap();
+            // let mut serialized = serde_json::to_vec(&*data).unwrap();
+            let mut serialized = serde_json::to_vec(&common::ServerMessage::Hello{message: String::from("hi client!")})
+                .unwrap();
             let _result = stream.write(&mut serialized);
 
         }

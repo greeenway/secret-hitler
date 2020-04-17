@@ -6,6 +6,8 @@ use std::net::TcpStream;
 use std::time;
 use std::env;
 
+use serde::{Deserialize};
+
 mod testing;
 
 // extern crate common;
@@ -33,9 +35,21 @@ fn main() -> std::io::Result<()> {
 
     let message = common::ClientMessage::Hello;
     send_message(&write_stream, message);
-
+    
+    let _ = stream.set_read_timeout(Some(time::Duration::from_millis(200)));
     let mut buffer = String::new();
+    let mut de = serde_json::Deserializer::from_reader(stream);
     loop {
+        loop {
+            // parse all messages from server
+            let result = common::ServerMessage::deserialize(&mut de);
+            if let Ok(message) = result {
+                println!("server sent: {:?}", message);
+            } else {
+                break;
+            }
+        }  
+
         print!("> ");
         let _= stdout().flush();
         buffer.clear();
