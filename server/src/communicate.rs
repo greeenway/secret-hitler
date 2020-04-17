@@ -14,8 +14,10 @@ extern crate common;
 
 pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::state::GameState>>) -> std::io::Result<()> {
     let _ = stream.set_read_timeout(Some(time::Duration::from_millis(200)));
-    
-    loop {
+    let user_timeout = time::Duration::from_secs(20);
+    let mut last_alive = time::Instant::now();
+    let mut done = false;
+    while !done {
         { // lock mutex
             let mut data = data.lock().unwrap();
             
@@ -27,15 +29,29 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
                 // parse all messages from client
                 let result = common::ClientMessage::deserialize(&mut de);
                 if let Ok(message) = result {
+                    if message == common::ClientMessage::StillAlive {
+                        last_alive = time::Instant::now();
+                    }
                     println!("client sent: {:?}", message);
                     crate::state::update_state(&mut *data, message);
                 } else {
                     break;
                 }
-            }   
+            } 
 
-            // send state to client
-            data.players.push(id as i32 + 1);
+            let elapsed_since_alive = last_alive.elapsed();
+            println!("thread {}: time since last alive: {}ms", id,
+                elapsed_since_alive.as_millis());
+
+            if elapsed_since_alive > user_timeout {
+                println!("user thread {} timed out", id);
+                done = true;
+                let mut serialized = serde_json::to_vec(&common::ServerMessage::Kicked{reason: String::from("No alive received")})
+                .unwrap();
+                let _result = stream.write(&mut serialized);
+            }
+
+            // data.players.push(id as i32 + 1);
 
             // let mut serialized = serde_json::to_vec(&*data).unwrap();
             let mut serialized = serde_json::to_vec(&common::ServerMessage::Hello{message: String::from("hi client!")})
@@ -46,5 +62,6 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
         thread::sleep(time::Duration::from_millis(1000));
         
     }
+    Ok(())
 }
 

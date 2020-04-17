@@ -15,6 +15,7 @@ pub fn say() -> another::Hello {
 pub enum ClientMessage {
     Hello,
     Connect {name: String},
+    StillAlive,
     Quit,
 }
 
@@ -28,6 +29,7 @@ pub enum ServerMessage {
     Hello { message: String },
     Quit {user_name: String},
     Users {users: Vec<String>},
+    Kicked {reason: String},
 }
 
 pub struct Configuration {
