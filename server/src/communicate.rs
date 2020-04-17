@@ -11,6 +11,18 @@ use serde_json;
 
 extern crate common;
 
+// todo user connection
+// we need a mapping thread id -> player_id (username)
+// each player has a connection_status connected/disconnected
+// player connects: id gets mapped to player_id, server verifies id is unique
+// if player is disconnected reconnect -> connection_status -> connected
+// map new thread id to player_id
+// what happens if a user is disconnected? can the game continue? how long to wait?
+// structures
+// players vector, has connection_status
+// thread_to_player_id 
+// todo: how to handle disconnects? with a message? (towards server state)
+
 
 pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::state::GameState>>) -> std::io::Result<()> {
     let _ = stream.set_read_timeout(Some(time::Duration::from_millis(200)));
@@ -33,7 +45,7 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
                         last_alive = time::Instant::now();
                     }
                     println!("client sent: {:?}", message);
-                    crate::state::update_state(&mut *data, message);
+                    crate::state::update_state(&mut *data, message, id);
                 } else {
                     break;
                 }
