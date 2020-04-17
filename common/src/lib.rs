@@ -2,6 +2,7 @@ use std::fs;
 use yaml_rust::{YamlLoader};
 
 use serde::{Serialize, Deserialize};
+// use serde_json;
 
 // pub mod another;
 pub mod another;
@@ -10,11 +11,16 @@ pub fn say() -> another::Hello {
     another::Hello{x:2}
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum ClientMessage {
-    Connect { user_name: String },
-    Quit {user_name: String},
+    Hello,
+    Quit,
 }
+
+// pub enum ClientMessage {
+//     Connect { user_name: String },
+//     Quit {user_name: String},
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ServerMessage {
