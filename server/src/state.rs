@@ -80,12 +80,20 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
         common::ClientMessage::Connect{name} => {
             if !state.outboxes.contains_key(&id) {
                 state.outboxes.insert(id, VecDeque::new());
+            } else {
+                // forbid user to change player name
+                if let Some(player) = state.players.iter().find(|player| player.thread_id == id) {
+                    let reason = format!("Already connected as {}", player.player_id);
+                    state.queue_message(id, ServerMessage::Rejected{reason: reason});
+                    return;
+                }
             }
 
             if let Some(player) = state.players.iter_mut().find(|player| player.player_id == name) {
                 if player.connection_status == ConnectionStatus::Disconnected {
                     // reconnect
                     player.connection_status = ConnectionStatus::Connected;
+                    player.thread_id = id;
                     state.queue_message(id, ServerMessage::Reconnected{user_name: name});
                 } else {
                     // user already present and connected
