@@ -60,7 +60,7 @@ fn main() -> std::io::Result<()> {
                 }
             }
             send_message(&alive_stream, common::ClientMessage::StillAlive, Show::DontPrintMessage);
-            thread::sleep(time::Duration::from_millis(5000));
+            thread::sleep(time::Duration::from_millis(4000));
         }
     });
 

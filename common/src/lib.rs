@@ -30,6 +30,7 @@ pub enum ServerMessage {
     Quit {user_name: String},
     Users {users: Vec<String>},
     Kicked {reason: String},
+    Reconnected {user_name: String},
 }
 
 pub struct Configuration {
