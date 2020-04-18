@@ -23,6 +23,7 @@ extern crate common;
 // thread_to_player_id 
 // todo: how to handle disconnects? with a message? (towards server state)
 
+// todo: connect to server -> player to connected, create queue in outbox, say hello
 
 pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::state::GameState>>) -> std::io::Result<()> {
     let _ = stream.set_read_timeout(Some(time::Duration::from_millis(200)));
@@ -68,7 +69,6 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
 
             // let message = (*data).outboxes.get(&id).unwrap().pop_back(); //.outboxes.get(&id).unwrap().pop_back();
 
-            data.queue_message(id, common::ServerMessage::Hello{message: String::from("hi enq client!")});
             // let mut serialized = serde_json::to_vec(&*data).unwrap();
             while let Some(message) = data.pop_message(id) {
                 let mut serialized = serde_json::to_vec(&message).unwrap();
