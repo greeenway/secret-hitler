@@ -24,7 +24,7 @@ pub enum ClientMessage {
 //     Quit {user_name: String},
 // }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum ServerMessage {
     Hello { message: String },
     Quit {user_name: String},

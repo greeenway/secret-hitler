@@ -64,11 +64,24 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
             }
 
             // data.players.push(id as i32 + 1);
+            // let message = &*data ;//.outboxes.get(&id).unwrap().pop_back();
 
+            // let message = (*data).outboxes.get(&id).unwrap().pop_back(); //.outboxes.get(&id).unwrap().pop_back();
+
+            data.queue_message(id, common::ServerMessage::Hello{message: String::from("hi enq client!")});
             // let mut serialized = serde_json::to_vec(&*data).unwrap();
-            let mut serialized = serde_json::to_vec(&common::ServerMessage::Hello{message: String::from("hi client!")})
-                .unwrap();
-            let _result = stream.write(&mut serialized);
+            while let Some(message) = data.pop_message(id) {
+                let mut serialized = serde_json::to_vec(&message).unwrap();
+                let _result = stream.write(&mut serialized);
+            }
+
+            
+
+            // let mut serialized = serde_json::to_vec(&common::ServerMessage::Hello{message: String::from("hi client!")})
+            //     .unwrap();
+            // let _result = stream.write(&mut serialized);
+
+            
 
         }
         thread::sleep(time::Duration::from_millis(1000));
