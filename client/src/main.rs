@@ -1,5 +1,5 @@
-use std::io::prelude::*;
-use std::io::{stdout};
+// use std::io::prelude::*;
+use std::io::{stdout, Write};
 
 use std::net::TcpStream;
 
@@ -9,7 +9,7 @@ use std::time;
 use std::env;
 use std::sync::{Arc, Mutex};
 
-use crossterm::{execute, Result, 
+use crossterm::{queue, Result, 
     terminal::{SetSize, size, enable_raw_mode, disable_raw_mode, Clear, ClearType},
     cursor::MoveTo,
 };
@@ -122,7 +122,7 @@ fn main() -> Result<()> {
 
     enable_raw_mode().unwrap();
     // Resize terminal and scroll up.
-    execute!(
+    queue!(
         stdout(),
         SetSize(80, 30),
     )?;
@@ -138,14 +138,14 @@ fn main() -> Result<()> {
                 if data.done {
                     break;
                 }
-                let _res = execute!(stdout(), Clear(ClearType::All));
-                // let _res = execute!(stdout(), MoveTo(0,0), Print("Hallo Welt"));
+                let _res = queue!(stdout(), Clear(ClearType::All));
+                // let _res = queue!(stdout(), MoveTo(0,0), Print("Hallo Welt"));
                 for (line_number, line) in data.output.iter().enumerate() {
-                    let _res = execute!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line));
+                    let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line));
                 }
 
                 if data.cmd_prompt {
-                    let _res = execute!(
+                    let _res = queue!(
                         stdout(),
                         MoveTo(0,0),
                         Print("> "),
@@ -153,6 +153,7 @@ fn main() -> Result<()> {
                     );
                 }
             }
+            let _res = stdout().flush();
             thread::sleep(std::time::Duration::from_millis(50));
         }
     });
@@ -266,7 +267,7 @@ fn main() -> Result<()> {
     event_handle.join().unwrap();
     thread_handle.join().unwrap();
 
-    execute!(
+    queue!(
         stdout(),
         Print("hallo"),
         Clear(ClearType::All),
@@ -275,7 +276,7 @@ fn main() -> Result<()> {
 
 
     // Be a good citizen, cleanup
-    execute!(stdout(), MoveTo(0,0), SetSize(cols, rows))?;
+    queue!(stdout(), MoveTo(0,0), SetSize(cols, rows))?;
     disable_raw_mode().unwrap();
 
 
