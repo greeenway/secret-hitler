@@ -124,7 +124,7 @@ fn main() -> Result<()> {
     // Resize terminal and scroll up.
     execute!(
         stdout(),
-        SetSize(60, 30),
+        SetSize(80, 30),
     )?;
     
     
@@ -153,7 +153,7 @@ fn main() -> Result<()> {
                     );
                 }
             }
-            thread::sleep(std::time::Duration::from_millis(20));
+            thread::sleep(std::time::Duration::from_millis(50));
         }
     });
 
@@ -208,7 +208,7 @@ fn main() -> Result<()> {
                         },
                         _ => println!("another key"),
                     }
-                    thread::sleep(std::time::Duration::from_millis(20));
+                    thread::sleep(std::time::Duration::from_millis(50));
                     
                 },
                 Event::Mouse(event) => println!("{:?}", event),

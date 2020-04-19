@@ -78,7 +78,7 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
             
 
         }
-        thread::sleep(time::Duration::from_millis(1000));
+        thread::sleep(time::Duration::from_millis(200));
         
     }
     Ok(())
