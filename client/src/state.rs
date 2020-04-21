@@ -4,6 +4,7 @@ use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
 
+use common::ServerMessage;
 
 trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -127,14 +128,14 @@ impl State {
 
     }
 
-    pub fn advance_handler(&mut self, message: Message) {
+    pub fn advance_handler(&mut self, message: ServerMessage) {
         match (self.handler.clone(), message) {
         
-            (HandlerWrapper::LoginScreen(_), Message::Stay{name: _})  => self.handler = HandlerWrapper::LoginScreen(LoginScreenHandler::new()),
-            (HandlerWrapper::LoginScreen(_), Message::Change)  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
-            (HandlerWrapper::PreGame(_), Message::Stay{name: _})  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
-            (HandlerWrapper::PreGame(_), Message::Change)  => self.handler = HandlerWrapper::LoginScreen(LoginScreenHandler::new()),
-            // _ => panic!("unhandled transition") // remove this in the end
+            (HandlerWrapper::LoginScreen(_), ServerMessage::Reconnected{user_name})  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
+            // (HandlerWrapper::LoginScreen(_), Message::Change)  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
+            // (HandlerWrapper::PreGame(_), Message::Stay{name: _})  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
+            // (HandlerWrapper::PreGame(_), Message::Change)  => self.handler = HandlerWrapper::LoginScreen(LoginScreenHandler::new()),
+            _ => panic!("unhandled transition") // remove this in the end
         }
     }
 }

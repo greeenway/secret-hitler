@@ -25,7 +25,7 @@ enum Show {
 
 mod state;
 use state::State;
-
+use common::ServerMessage;
 
 
 
@@ -56,8 +56,13 @@ fn execute_command(command: String, mut data: std::sync::MutexGuard<'_, State>) 
         ["hello"] => {
             data.shared.outbox.push_back(common::ClientMessage::Hello);
         },
-        ["change"] => {
-            data.advance_handler(state::Message::Change);
+        ["simulate", message] => {
+
+            match message {
+                "reconnect" => data.advance_handler(ServerMessage::Reconnected{user_name: String::from("dummy")}),
+                _ => data.shared.output.push_front(format!("unknown command '{}'", command)),
+            }
+            
         },
         ["clear"] => data.shared.output.clear(),
         _ => {
@@ -231,11 +236,16 @@ fn main() -> Result<()> {
                     loop {
                         // parse all messages from server
                         let result = common::ServerMessage::deserialize(&mut de);
+                        
+                        
                         if let Ok(message) = result {
                             data.shared.output.push_back(String::from(format!("{:?}", message)));
-                            if let common::ServerMessage::Kicked{reason} = message {
-                                println!("got kicked from the server because '{}'", reason);
-                                data.shared.done = true;
+                            match message {
+                                common::ServerMessage::Kicked{reason} => {
+                                    println!("got kicked from the server because '{}'", reason);
+                                    data.shared.done = true;
+                                },
+                                _ => data.advance_handler(message)
                             }
                         } else {
                             break;
