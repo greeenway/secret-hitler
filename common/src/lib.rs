@@ -19,10 +19,30 @@ pub enum ClientMessage {
     Quit,
 }
 
-// pub enum ClientMessage {
-//     Connect { user_name: String },
-//     Quit {user_name: String},
-// }
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ConnectionStatus {
+    Connected,
+    Disconnected,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Player {
+    pub player_id: String,
+    pub connection_status: ConnectionStatus,
+    pub thread_id: usize,
+}
+
+impl Player {
+    pub fn new(player_id: String, thread_id: usize) -> Player {
+        Player {
+            player_id: player_id,
+            connection_status: ConnectionStatus::Connected,
+            thread_id: thread_id,
+        }
+    }
+}
+
+
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum ServerMessage {
@@ -32,6 +52,7 @@ pub enum ServerMessage {
     Kicked {reason: String},
     Reconnected {user_name: String},
     Rejected {reason: String},
+    StatusUpdate {players: Vec<Player>},
 }
 
 pub struct Configuration {

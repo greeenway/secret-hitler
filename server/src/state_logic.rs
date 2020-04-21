@@ -9,11 +9,20 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
     loop {
         {
             // let mut data = data.lock().unwrap();
-            let data = data.lock().unwrap();
+            let mut data = data.lock().unwrap();
 
             println!("{:?}", data.state);
             println!("{:?}", data.players);
-
+            let current_players = data.players.clone();
+            for player in data.players.clone() {
+                if player.connection_status == common::ConnectionStatus::Connected {
+                    data.queue_message(
+                        player.thread_id, // TODO send to all online threads
+                        common::ServerMessage::StatusUpdate{players: current_players.clone()}
+                    );
+                }
+                
+            }
         }
 
 

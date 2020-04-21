@@ -49,7 +49,7 @@ pub fn handle_thread(id: usize, mut stream: TcpStream, data: Arc<Mutex<crate::st
 
             if elapsed_since_alive > user_timeout {
                 if let Some(player) = data.players.iter_mut().find(|player| player.thread_id == id) {
-                    player.connection_status = crate::state::ConnectionStatus::Disconnected;
+                    player.connection_status = common::ConnectionStatus::Disconnected;
                 }
                 println!("user thread {} timed out", id);
                 done = true;

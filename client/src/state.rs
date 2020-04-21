@@ -21,7 +21,7 @@ struct LoginScreenHandler {
 impl LoginScreenHandler {
     pub fn new() -> LoginScreenHandler {
         LoginScreenHandler {
-            input: String::from("username"),
+            input: String::from(""), // TODO add check for empty user name
         }
     }
 }
@@ -89,8 +89,22 @@ impl ActionHandler for PreGameHandler {
             Print("** PreGame **"),
             cursor::MoveTo(1,8),
             Print(format!("connected as {}", user)),
-
+            cursor::MoveTo(1,10),
+            Print("Players"),
         );
+
+        for (rel_line, player) in shared.players.iter().enumerate() {
+            let player_str = match player.connection_status {
+                common::ConnectionStatus::Connected => player.player_id.clone(),
+                common::ConnectionStatus::Disconnected => format!("{:12} (disconnected)", player.player_id),
+            };
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(1,12+rel_line as u16),
+                Print(player_str)
+            );
+        }
+
     }
 
     fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
@@ -131,6 +145,7 @@ pub struct SharedState {
     pub inbox: VecDeque<common::ServerMessage>,
     pub outbox: VecDeque<common::ClientMessage>,
     pub user_name: Option<String>,
+    pub players: Vec<common::Player>,
 }
 
 impl SharedState {
@@ -144,7 +159,7 @@ impl SharedState {
             inbox: VecDeque::new(),
             outbox: VecDeque::new(),
             user_name: None,
-            
+            players: Vec::new(),
         }
     }
 }
@@ -186,7 +201,13 @@ impl State {
             (HandlerWrapper::LoginScreen(_), ServerMessage::Connected{user_name}) => {
                 self.handler = HandlerWrapper::PreGame(PreGameHandler::new());
                 self.shared.user_name = Some(user_name);
-            }
+            },
+            (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {
+                self.shared.players = players;
+            },
+            (_, ServerMessage::StatusUpdate{players}) => {
+                // ignore for non pregame ... change later on
+            },
 
             (state, message) => {
                 panic!("unknown transition: {:?} / {:?}", state, message);
@@ -196,28 +217,3 @@ impl State {
 }
 
 
-//
-
-// match event {
-//     KeyEvent{
-//         code: KeyCode::Char(c),
-//         modifiers: _,
-//     } => {
-//         data.shared.input = format!("{}{}", data.shared.input, c);
-//     }
-//     KeyEvent{
-//         code: KeyCode::Backspace,
-//         modifiers: _,
-//     } => {
-//         data.shared.input.pop();
-//     },
-//     KeyEvent{
-//         code: KeyCode::Enter,
-//         modifiers: _,
-//     } => {
-//         let input = data.shared.input.clone();
-//         data.shared.input.clear();
-//         execute_command(input, data);
-//     },
-//     _ => {},
-// }

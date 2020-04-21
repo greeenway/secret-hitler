@@ -137,7 +137,9 @@ fn main() -> Result<()> {
 
                 // let _res = queue!(stdout(), MoveTo(0,0), Print("Hallo Welt"));
                 for (line_number, line) in data.shared.output.iter().enumerate() {
-                    let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line));
+                    let mut line_trucated = line.clone();
+                    line_trucated.truncate(80);
+                    let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line_trucated));
                 }
 
                 if data.shared.cmd_prompt {
@@ -240,7 +242,10 @@ fn main() -> Result<()> {
                         
                         
                         if let Ok(message) = result {
-                            data.shared.output.push_back(String::from(format!("{:?}", message)));
+                            data.shared.output.push_front(String::from(format!("{:?}", message)));
+                            let lines = data.shared.max_cmd_lines;
+                            data.shared.output.truncate(lines);
+                            
                             match message {
                                 common::ServerMessage::Kicked{reason} => {
                                     println!("got kicked from the server because '{}'", reason);

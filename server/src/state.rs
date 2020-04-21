@@ -2,29 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
 use common::ServerMessage;
+use common::ConnectionStatus;
+use common::Player;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum ConnectionStatus {
-    Connected,
-    Disconnected,
-}
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Player {
-    pub player_id: String,
-    pub connection_status: ConnectionStatus,
-    pub thread_id: usize,
-}
 
-impl Player {
-    pub fn new(player_id: String, thread_id: usize) -> Player {
-        Player {
-            player_id: player_id,
-            connection_status: ConnectionStatus::Connected,
-            thread_id: thread_id,
-        }
-    }
-}
+
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum State {
