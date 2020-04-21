@@ -26,7 +26,7 @@ pub enum ClientMessage {
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum ServerMessage {
-    Hello { message: String },
+    Connected { user_name: String },
     Quit {user_name: String},
     Users {users: Vec<String>},
     Kicked {reason: String},

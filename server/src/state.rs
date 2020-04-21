@@ -102,7 +102,7 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
             } else {
                 state.players.push(Player::new(name.clone(), id));
                 state.queue_message(id, 
-                    ServerMessage::Hello { message: format!("Welcome {}!", name) });
+                    ServerMessage::Connected { user_name: name });
             }
         },
         common::ClientMessage::Hello => {

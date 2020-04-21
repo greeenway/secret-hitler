@@ -3,11 +3,13 @@ use std::collections::VecDeque;
 use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
+use crossterm::event::{KeyEvent, KeyCode};
 
 use common::ServerMessage;
 
 trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
+    fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent);
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -35,6 +37,30 @@ impl ActionHandler for LoginScreenHandler {
 
         );
     }
+
+    fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
+        match event {
+            KeyEvent{
+                code: KeyCode::Char(c),
+                modifiers: _,
+            } => {
+                self.input = format!("{}{}", self.input, c);
+            }
+            KeyEvent{
+                code: KeyCode::Backspace,
+                modifiers: _,
+            } => {
+                self.input.pop();
+            },
+            KeyEvent{
+                code: KeyCode::Enter,
+                modifiers: _,
+            } => {
+                shared.outbox.push_back(common::ClientMessage::Connect{name: self.input.clone()});
+            },
+            _ => {},
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -52,11 +78,23 @@ impl PreGameHandler {
 
 impl ActionHandler for PreGameHandler {
     fn draw(&mut self, shared: &mut SharedState) {
+        let mut user = String::from("- unknown -");
+        if let Some(user_name) = shared.user_name.clone() {
+            user = user_name;
+        }
+
         let _res = queue!(
             stdout(),
             cursor::MoveTo(0,7),
             Print("** PreGame **"),
+            cursor::MoveTo(1,8),
+            Print(format!("connected as {}", user)),
+
         );
+    }
+
+    fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
+        
     }
 }
 
@@ -74,6 +112,13 @@ impl ActionHandler for HandlerWrapper {
             HandlerWrapper::PreGame(inner_handler) => inner_handler.draw(shared),
         }
     }
+
+    fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
+        match self {
+            HandlerWrapper::LoginScreen(inner_handler) => inner_handler.handle_event(shared, event),
+            HandlerWrapper::PreGame(inner_handler) => inner_handler.handle_event(shared, event),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -85,6 +130,7 @@ pub struct SharedState {
     pub max_cmd_lines: usize,
     pub inbox: VecDeque<common::ServerMessage>,
     pub outbox: VecDeque<common::ClientMessage>,
+    pub user_name: Option<String>,
 }
 
 impl SharedState {
@@ -97,6 +143,8 @@ impl SharedState {
             max_cmd_lines: 5,
             inbox: VecDeque::new(),
             outbox: VecDeque::new(),
+            user_name: None,
+            
         }
     }
 }
@@ -125,17 +173,51 @@ impl State {
     }
 
     pub fn handle_events(&mut self, event: event::KeyEvent) {
-
+        self.handler.handle_event(&mut self.shared, event);
     }
 
     pub fn advance_handler(&mut self, message: ServerMessage) {
         match (self.handler.clone(), message) {
         
-            (HandlerWrapper::LoginScreen(_), ServerMessage::Reconnected{user_name})  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
-            // (HandlerWrapper::LoginScreen(_), Message::Change)  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
-            // (HandlerWrapper::PreGame(_), Message::Stay{name: _})  => self.handler = HandlerWrapper::PreGame(PreGameHandler::new()),
-            // (HandlerWrapper::PreGame(_), Message::Change)  => self.handler = HandlerWrapper::LoginScreen(LoginScreenHandler::new()),
-            _ => panic!("unhandled transition") // remove this in the end
+            (HandlerWrapper::LoginScreen(_), ServerMessage::Reconnected{user_name}) => {
+                self.handler = HandlerWrapper::PreGame(PreGameHandler::new());
+                self.shared.user_name = Some(user_name);
+            },
+            (HandlerWrapper::LoginScreen(_), ServerMessage::Connected{user_name}) => {
+                self.handler = HandlerWrapper::PreGame(PreGameHandler::new());
+                self.shared.user_name = Some(user_name);
+            }
+
+            (state, message) => {
+                panic!("unknown transition: {:?} / {:?}", state, message);
+             } // remove this in the end
         }
     }
 }
+
+
+//
+
+// match event {
+//     KeyEvent{
+//         code: KeyCode::Char(c),
+//         modifiers: _,
+//     } => {
+//         data.shared.input = format!("{}{}", data.shared.input, c);
+//     }
+//     KeyEvent{
+//         code: KeyCode::Backspace,
+//         modifiers: _,
+//     } => {
+//         data.shared.input.pop();
+//     },
+//     KeyEvent{
+//         code: KeyCode::Enter,
+//         modifiers: _,
+//     } => {
+//         let input = data.shared.input.clone();
+//         data.shared.input.clear();
+//         execute_command(input, data);
+//     },
+//     _ => {},
+// }

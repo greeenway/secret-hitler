@@ -172,40 +172,41 @@ fn main() -> Result<()> {
                             data.shared.cmd_prompt = !data.shared.cmd_prompt;
                         },
                         KeyEvent{
-                            code: KeyCode::Char(c),
-                            modifiers: _,
-                        } => {
-                            if data.shared.cmd_prompt {
-                                data.shared.input = format!("{}{}", data.shared.input, c);
-                            }
-                        }
-                        KeyEvent{
-                            code: KeyCode::Backspace,
-                            modifiers: _,
-                        } => {
-                            if data.shared.cmd_prompt {
-                                data.shared.input.pop();
-                            }
-                        },
-                        KeyEvent{
-                            code: KeyCode::Enter,
-                            modifiers: _,
-                        } => {
-                            if data.shared.cmd_prompt {
-                                let input = data.shared.input.clone();
-                                data.shared.input.clear();
-                                execute_command(input, data);
-                            }
-                        },
-                        KeyEvent{
                             code: KeyCode::Esc,
                             modifiers: _,
                         } => {
                             data.shared.done = true;
                             break;
                         },
-                        _ => {
-                            data.handle_events(event)
+                        event => {
+                            // handling of cmd_prompt here
+                            if data.shared.cmd_prompt {
+                                match event {
+                                    KeyEvent{
+                                        code: KeyCode::Char(c),
+                                        modifiers: _,
+                                    } => {
+                                        data.shared.input = format!("{}{}", data.shared.input, c);
+                                    }
+                                    KeyEvent{
+                                        code: KeyCode::Backspace,
+                                        modifiers: _,
+                                    } => {
+                                        data.shared.input.pop();
+                                    },
+                                    KeyEvent{
+                                        code: KeyCode::Enter,
+                                        modifiers: _,
+                                    } => {
+                                        let input = data.shared.input.clone();
+                                        data.shared.input.clear();
+                                        execute_command(input, data);
+                                    },
+                                    _ => {},
+                                }
+                            } else {
+                                data.handle_events(event);
+                            } 
                         },
                     }
                     thread::sleep(std::time::Duration::from_millis(50));
