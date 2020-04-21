@@ -152,7 +152,7 @@ fn main() -> Result<()> {
                 }
             }
             let _res = stdout().flush();
-            thread::sleep(std::time::Duration::from_millis(50));
+            thread::sleep(std::time::Duration::from_millis(20));
         }
     });
 
@@ -211,7 +211,7 @@ fn main() -> Result<()> {
                             } 
                         },
                     }
-                    thread::sleep(std::time::Duration::from_millis(50));
+                    thread::sleep(std::time::Duration::from_millis(20));
                     
                 },
                 Event::Mouse(event) => println!("{:?}", event),
