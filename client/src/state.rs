@@ -13,7 +13,7 @@ trait ActionHandler {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-struct LoginScreenHandler {
+pub struct LoginScreenHandler {
     input: String
 }
 
@@ -27,7 +27,7 @@ impl LoginScreenHandler {
 }
 
 impl ActionHandler for LoginScreenHandler {
-    fn draw(&mut self, shared: &mut SharedState) {
+    fn draw(&mut self, _: &mut SharedState) {
         let _res = queue!(
             stdout(),
             cursor::MoveTo(0,7),
@@ -64,7 +64,7 @@ impl ActionHandler for LoginScreenHandler {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-struct PreGameHandler {
+pub struct PreGameHandler {
     
 }
 
@@ -107,7 +107,7 @@ impl ActionHandler for PreGameHandler {
 
     }
 
-    fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
+    fn handle_event(&mut self, _: &mut SharedState, _: event::KeyEvent) {
         
     }
 }
@@ -164,10 +164,7 @@ impl SharedState {
     }
 }
 
-pub enum Message {
-    Stay {name: String},
-    Change,
-}
+
 
 #[derive(Debug)]
 pub struct State {
@@ -205,7 +202,7 @@ impl State {
             (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {
                 self.shared.players = players;
             },
-            (_, ServerMessage::StatusUpdate{players}) => {
+            (_, ServerMessage::StatusUpdate{players: _}) => {
                 // ignore for non pregame ... change later on
             },
 
