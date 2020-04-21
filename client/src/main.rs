@@ -4,7 +4,7 @@ use std::io::{stdout, Write};
 use std::net::TcpStream;
 
 use std::thread;
-use std::collections::VecDeque;
+
 use std::time;
 use std::env;
 use std::sync::{Arc, Mutex};
@@ -23,30 +23,14 @@ enum Show {
     DontPrintMessage,
 }
 
-#[derive(PartialEq, Clone)]
-struct GuiState {
-    cmd_prompt: bool,
-    input: String,
-    output: VecDeque<String>,
-    done: bool,
-    max_cmd_lines: usize,
-    inbox: VecDeque<common::ServerMessage>,
-    outbox: VecDeque<common::ClientMessage>,
-}
+mod state;
+use state::State;
 
-impl GuiState {
-    pub fn new() -> GuiState {
-        GuiState {
-            cmd_prompt: true,
-            input: String::from(""),
-            output: VecDeque::new(),
-            done: false,
-            max_cmd_lines: 5,
-            inbox: VecDeque::new(),
-            outbox: VecDeque::new(),
-        }
-    }
-}
+
+
+
+
+
 
 mod testing;
 
@@ -63,20 +47,23 @@ fn send_message(mut stream: &TcpStream, message: common::ClientMessage, debug: S
     }
 }
 
-fn execute_command(command: String, mut data: std::sync::MutexGuard<'_, GuiState>) {
+fn execute_command(command: String, mut data: std::sync::MutexGuard<'_, State>) {
     let parts: Vec<&str> = command.split_whitespace().collect();
     match parts[..] {
         ["connect", user_name] => {
-            data.outbox.push_back(common::ClientMessage::Connect{name: String::from(user_name)});
+            data.shared.outbox.push_back(common::ClientMessage::Connect{name: String::from(user_name)});
         },
         ["hello"] => {
-            data.outbox.push_back(common::ClientMessage::Hello);
+            data.shared.outbox.push_back(common::ClientMessage::Hello);
         },
-        ["clear"] => data.output.clear(),
+        ["change"] => {
+            data.advance_handler(state::Message::Change);
+        },
+        ["clear"] => data.shared.output.clear(),
         _ => {
-            let lines = data.max_cmd_lines;
-            data.output.push_front(format!("unknown command '{}'", command));
-            data.output.truncate(lines);
+            let lines = data.shared.max_cmd_lines;
+            data.shared.output.push_front(format!("unknown command '{}'", command));
+            data.shared.output.truncate(lines);
         }
     }
 }
@@ -98,16 +85,16 @@ fn main() -> Result<()> {
     send_message(&write_stream, message, Show::DontPrintMessage);
     let alive_stream = stream.try_clone()?;
 
-    let gui_state = Arc::new(Mutex::new(GuiState::new()));
+    let client_state = Arc::new(Mutex::new(State::new()));
 
     // let stop_alive_thread = Arc::new(Mutex::new(false));
-    let stop_alive_copy = Arc::clone(&gui_state);
+    let stop_alive_copy = Arc::clone(&client_state);
 
     thread::spawn( move || {
         loop {
             {
-                let gui_state = stop_alive_copy.lock().unwrap();
-                if gui_state.done {
+                let client_state = stop_alive_copy.lock().unwrap();
+                if client_state.shared.done {
                     break;
                 }
             }
@@ -129,27 +116,31 @@ fn main() -> Result<()> {
     
     
 
+
     // rendering loop
-    let render_mutex = Arc::clone(&gui_state);
+    let render_mutex = Arc::clone(&client_state);
     let render_handle = thread::spawn(move|| {
         loop {
             {
-                let data = render_mutex.lock().unwrap();
-                if data.done {
+                let mut data = render_mutex.lock().unwrap();
+                if data.shared.done {
                     break;
                 }
                 let _res = queue!(stdout(), Clear(ClearType::All));
+
+                data.draw();
+
                 // let _res = queue!(stdout(), MoveTo(0,0), Print("Hallo Welt"));
-                for (line_number, line) in data.output.iter().enumerate() {
+                for (line_number, line) in data.shared.output.iter().enumerate() {
                     let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line));
                 }
 
-                if data.cmd_prompt {
+                if data.shared.cmd_prompt {
                     let _res = queue!(
                         stdout(),
                         MoveTo(0,0),
                         Print("> "),
-                        Print(data.input.clone()),
+                        Print(data.shared.input.clone()),
                     );
                 }
             }
@@ -159,10 +150,11 @@ fn main() -> Result<()> {
     });
 
 
-    let event_mutex = gui_state.clone();
+
+
+    let event_mutex = client_state.clone();
     let event_handle = thread::spawn(move || {
         loop {
-            
             match crossterm::event::read().unwrap() {
                 Event::Key(event) => {
                     let mut data = event_mutex.lock().unwrap();
@@ -172,31 +164,31 @@ fn main() -> Result<()> {
                             code: KeyCode::Char('0'),
                             modifiers: _,
                         } => {
-                            data.cmd_prompt = !data.cmd_prompt;
+                            data.shared.cmd_prompt = !data.shared.cmd_prompt;
                         },
                         KeyEvent{
                             code: KeyCode::Char(c),
                             modifiers: _,
                         } => {
-                            if data.cmd_prompt {
-                                data.input = format!("{}{}", data.input, c);
+                            if data.shared.cmd_prompt {
+                                data.shared.input = format!("{}{}", data.shared.input, c);
                             }
                         }
                         KeyEvent{
                             code: KeyCode::Backspace,
                             modifiers: _,
                         } => {
-                            if data.cmd_prompt {
-                                data.input.pop();
+                            if data.shared.cmd_prompt {
+                                data.shared.input.pop();
                             }
                         },
                         KeyEvent{
                             code: KeyCode::Enter,
                             modifiers: _,
                         } => {
-                            if data.cmd_prompt {
-                                let input = data.input.clone();
-                                data.input.clear();
+                            if data.shared.cmd_prompt {
+                                let input = data.shared.input.clone();
+                                data.shared.input.clear();
                                 execute_command(input, data);
                             }
                         },
@@ -204,10 +196,12 @@ fn main() -> Result<()> {
                             code: KeyCode::Esc,
                             modifiers: _,
                         } => {
-                            data.done = true;
+                            data.shared.done = true;
                             break;
                         },
-                        _ => println!("another key"),
+                        _ => {
+                            data.handle_events(event)
+                        },
                     }
                     thread::sleep(std::time::Duration::from_millis(50));
                     
@@ -220,7 +214,7 @@ fn main() -> Result<()> {
     });
 
     // start thread mutex 
-    let thread_mutex = gui_state.clone();
+    let thread_mutex = client_state.clone();
     let _ = stream.set_read_timeout(Some(time::Duration::from_millis(50)));
     // let mut buffer = String::new();
     let mut de = serde_json::Deserializer::from_reader(stream);
@@ -230,7 +224,7 @@ fn main() -> Result<()> {
             {
                 {
                     let mut data = thread_mutex.lock().unwrap();
-                    if data.done {
+                    if data.shared.done {
                         break;
                     }
 
@@ -238,17 +232,17 @@ fn main() -> Result<()> {
                         // parse all messages from server
                         let result = common::ServerMessage::deserialize(&mut de);
                         if let Ok(message) = result {
-                            data.output.push_back(String::from(format!("{:?}", message)));
+                            data.shared.output.push_back(String::from(format!("{:?}", message)));
                             if let common::ServerMessage::Kicked{reason} = message {
                                 println!("got kicked from the server because '{}'", reason);
-                                data.done = true;
+                                data.shared.done = true;
                             }
                         } else {
                             break;
                         }
                     }
 
-                    while let Some(message) = data.outbox.pop_back() {
+                    while let Some(message) = data.shared.outbox.pop_back() {
                         send_message(&write_stream, message, Show::PrintMessage)
                     }
 
@@ -280,96 +274,5 @@ fn main() -> Result<()> {
     disable_raw_mode().unwrap();
 
 
-    // new code end
-
-    // let _ = stream.set_read_timeout(Some(time::Duration::from_millis(100)));
-    // let mut buffer = String::new();
-    // let mut de = serde_json::Deserializer::from_reader(stream);
-    // while !done {
-    //     loop {
-    //         // parse all messages from server
-    //         let result = common::ServerMessage::deserialize(&mut de);
-    //         if let Ok(message) = result {
-    //             println!("server sent: {:?}", message);
-    //             if let common::ServerMessage::Kicked{reason} = message {
-    //                 println!("got kicked from the server because '{}'", reason);
-    //                 done = true;
-    //             }
-    //         } else {
-    //             break;
-    //         }
-    //     }  
-    //     if !done {
-    //         print!("> ");
-    //         let _= stdout().flush();
-    //         buffer.clear();
-    //         stdin().read_line(&mut buffer).expect("Did not enter a correct string");
-    //         println!("got: {}",buffer);
-
-    //         let pattern: Vec<&str> = buffer.split_whitespace().collect();
-
-    //         match pattern.as_slice() {
-    //             ["hello"] => send_message(&write_stream, common::ClientMessage::Hello, Show::PrintMessage),
-    //             ["quit"] => send_message(&write_stream, common::ClientMessage::Quit, Show::PrintMessage),
-    //             ["connect", user] => send_message(&write_stream, common::ClientMessage::Connect{name: String::from(*user)}, Show::PrintMessage),
-    //             ["q"] => break,
-    //             x => println!("unknown: {:?}", x),
-    //         }
-    //     }
-    // }
-
-
-    // println!("stopping client...");
     Ok(())
-    
-
-
-
-    // loop {
-        
-    //     let result = GameState::deserialize(&mut de);
-    //     if let Ok(state) = result {
-    //         println!("\nstate received:");
-    //         println!("{:?}", state);
-
-    //         let message = ClientMessage::Hello;
-    //         let mut serialized = serde_json::to_vec(&message).unwrap();
-    //         let _result = write_stream.write(&mut serialized);
-    //         let _result = write_stream.write(&mut serialized);
-    //         // let _result = write_stream.write(&mut serialized);
-    //     } else {
-    //         print!(".");
-            
-            
-    //     }
-    //     thread::sleep(time::Duration::from_millis(500));
-    // }
-
-
-    // let mymessage = common::ClientMessage::Connect {
-    //     user_name: String::from("Lukas"),
-    // };
-    // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
-    // let _result = stream.write(&mut serialized);
-
-    // loop {}
-
-
-
-    // let mymessage = common::Message::Quit{user_name: String::from("Lukas")};
-    // let mut serialized = serde_json::to_vec(&mymessage).unwrap();
-    // let _result = stream.write(&mut serialized);
-
-    // let args: Vec<String> = env::args().collect();
-
-    // if args.len() != 2 {
-    //     panic!("usage: cmd [filename.yaml]");
-    // }
-
-    // let user_actions = testing::read_user_actions(&args[1]).unwrap();
-
-    // for message_and_duration in user_actions.iter() {
-    //     println!("{:?}", message_and_duration.message);
-    //     println!("duration: {}s", message_and_duration.duration);
-    // }
 }
