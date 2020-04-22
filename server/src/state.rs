@@ -6,8 +6,20 @@ use common::ConnectionStatus;
 use common::Player;
 
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SharedState {
+    pub players: Vec<Player>,
+    pub outboxes: HashMap<usize, VecDeque<ServerMessage>>,
+}
 
-
+impl SharedState {
+    pub fn new() -> SharedState {
+        SharedState {
+            players: Vec::new(),
+            outboxes: HashMap::new(),
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum State {
@@ -15,43 +27,34 @@ pub enum State {
     GameOver,
 }
 
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GameState {
     pub state: State,
-    pub players: Vec<Player>,
-    pub outboxes: HashMap<usize, VecDeque<ServerMessage>>,
-
+    pub shared: SharedState,
 }
 
 impl GameState {
     pub fn new() -> GameState {
-        let mut state = GameState {
+        GameState {
             state: State::Pregame,
-            players: Vec::new(),
-            outboxes: HashMap::new(),
-        };
-
-        state.outboxes.insert(0, VecDeque::new());
-
-        state
+            shared: SharedState::new(),
+        }
     }
 
     pub fn queue_message(&mut self, to_thread_id: usize, message: ServerMessage) {
-        self.outboxes.get_mut(&to_thread_id).unwrap().push_back(message);
+        self.shared.outboxes.get_mut(&to_thread_id).unwrap().push_back(message);
     }
 
     pub fn pop_message(&mut self, thread_id: usize) -> Option<ServerMessage>{
 
-        let res = self.outboxes.get_mut(&thread_id);
+        let res = self.shared.outboxes.get_mut(&thread_id);
         match res {
             Some(deque) => {
                 deque.pop_back() 
             },
             None => None,
         }
-
-        
-
     }
 
 }
@@ -61,18 +64,18 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
 
     match message {
         common::ClientMessage::Connect{name} => {
-            if !state.outboxes.contains_key(&id) {
-                state.outboxes.insert(id, VecDeque::new());
+            if !state.shared.outboxes.contains_key(&id) {
+                state.shared.outboxes.insert(id, VecDeque::new());
             } else {
                 // forbid user to change player name
-                if let Some(player) = state.players.iter().find(|player| player.thread_id == id) {
+                if let Some(player) = state.shared.players.iter().find(|player| player.thread_id == id) {
                     let reason = format!("Already connected as {}", player.player_id);
                     state.queue_message(id, ServerMessage::Rejected{reason: reason});
                     return;
                 }
             }
 
-            if let Some(player) = state.players.iter_mut().find(|player| player.player_id == name) {
+            if let Some(player) = state.shared.players.iter_mut().find(|player| player.player_id == name) {
                 if player.connection_status == ConnectionStatus::Disconnected {
                     // reconnect
                     player.connection_status = ConnectionStatus::Connected;
@@ -83,7 +86,7 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                     state.queue_message(id, ServerMessage::Kicked{reason: String::from("user already logged in")});
                 }
             } else {
-                state.players.push(Player::new(name.clone(), id));
+                state.shared.players.push(Player::new(name.clone(), id));
                 state.queue_message(id, 
                     ServerMessage::Connected { user_name: name });
             }
