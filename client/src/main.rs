@@ -29,12 +29,10 @@ use common::ServerMessage;
 
 mod login_screen;
 mod pre_game;
+mod identity_assignment;
 
 
 // TODO: refactor main.rs of client into multiple files (per state? at least)
-// TODO: send ready messages from client if pregame and ready
-// TODO: collect ready messages at server and set collect states of ready players
-
 
 
 mod testing;

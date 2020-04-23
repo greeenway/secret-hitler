@@ -10,6 +10,9 @@ pub struct PreGameHandler {
     ready: bool,
 }
 
+// TODO disable joining of new users after pregame is completed
+// TODO only advance once after pregame
+
 impl PreGameHandler {
     pub fn new() -> PreGameHandler {
         PreGameHandler {

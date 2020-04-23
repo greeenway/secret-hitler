@@ -51,11 +51,11 @@ impl Player {
 pub enum ServerMessage {
     Connected { user_name: String },
     Quit {user_name: String},
-    Users {users: Vec<String>},
-    Kicked {reason: String},
-    Reconnected {user_name: String},
-    Rejected {reason: String},
-    StatusUpdate {players: Vec<Player>},
+    Kicked {reason: String},             // player gets kicked from the server
+    Reconnected {user_name: String},     // player reconnects to old session
+    Rejected {reason: String},           //
+    StatusUpdate {players: Vec<Player>}, // regular update of selected game state
+    Advance,                             // server pushes users to next state
 }
 
 pub struct Configuration {

@@ -24,6 +24,7 @@ impl SharedState {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum State {
     Pregame,
+    IdentityAssignment,
     GameOver,
 }
 

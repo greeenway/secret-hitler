@@ -8,6 +8,7 @@ use common::ServerMessage;
 
 use crate::login_screen;
 use crate::pre_game;
+use crate::identity_assignment;
 
 
 pub trait ActionHandler {
@@ -23,6 +24,7 @@ pub trait ActionHandler {
 pub enum HandlerWrapper {
     LoginScreen(login_screen::LoginScreenHandler),
     PreGame(pre_game::PreGameHandler),
+    IdentityAssignment(identity_assignment::IdentityAssignmentHandler),
 }
 
 
@@ -31,6 +33,7 @@ impl ActionHandler for HandlerWrapper {
         match self {
             HandlerWrapper::LoginScreen(inner_handler) => inner_handler.draw(shared),
             HandlerWrapper::PreGame(inner_handler) => inner_handler.draw(shared),
+            HandlerWrapper::IdentityAssignment(inner_handler) => inner_handler.draw(shared),
         }
     }
 
@@ -38,6 +41,7 @@ impl ActionHandler for HandlerWrapper {
         match self {
             HandlerWrapper::LoginScreen(inner_handler) => inner_handler.handle_event(shared, event),
             HandlerWrapper::PreGame(inner_handler) => inner_handler.handle_event(shared, event),
+            HandlerWrapper::IdentityAssignment(inner_handler) => inner_handler.handle_event(shared, event),
         }
     }
 }
@@ -109,6 +113,10 @@ impl State {
             (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {
                 self.shared.players = players;
             },
+            (HandlerWrapper::PreGame(_), ServerMessage::Advance) => {
+                self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new());
+            }, 
+            (_, ServerMessage::Advance) => {}, // TODO handle this more carefully
             (_, ServerMessage::StatusUpdate{players: _}) => {
                 // ignore for non pregame ... change later on
             },
