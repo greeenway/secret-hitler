@@ -68,6 +68,13 @@ impl state::ActionHandler for PreGameHandler {
             );
         }
 
+        for (rel_line, chat_message) in shared.chat_messages.iter().enumerate() {
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(1, 25 + rel_line as u16),
+                Print(chat_message)
+            );
+        }
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {

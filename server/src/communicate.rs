@@ -3,10 +3,10 @@ use std::io::prelude::*;
 use std::thread;
 use std::time;
 
-use std::net::{TcpStream};
+use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 
-use serde::{Deserialize};
+use serde::Deserialize;
 use serde_json;
 
 extern crate common;

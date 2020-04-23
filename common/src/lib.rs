@@ -15,6 +15,7 @@ pub fn say() -> another::Hello {
 pub enum ClientMessage {
     Hello,
     Connect {name: String},
+    Chat {message: String},
     StillAlive,
     Ready {ready: bool},
     Quit,
@@ -56,6 +57,7 @@ pub enum ServerMessage {
     Rejected {reason: String},           //
     StatusUpdate {players: Vec<Player>}, // regular update of selected game state
     Advance,                             // server pushes users to next state
+    Chat {user_name: String, message: String}
 }
 
 pub struct Configuration {

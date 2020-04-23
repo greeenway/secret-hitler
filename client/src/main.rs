@@ -59,6 +59,11 @@ fn execute_command(command: String, mut data: std::sync::MutexGuard<'_, State>) 
         ["hello"] => {
             data.shared.outbox.push_back(common::ClientMessage::Hello);
         },
+        ["say", message] => {
+            data.shared.outbox.push_back(common::ClientMessage::Chat {
+                message: String::from(message),
+            });
+        }
         ["simulate", message] => {
 
             match message {

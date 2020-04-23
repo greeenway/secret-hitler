@@ -10,15 +10,10 @@ use crate::login_screen;
 use crate::pre_game;
 use crate::identity_assignment;
 
-
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
     fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent);
 }
-
-
-
-
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum HandlerWrapper {
@@ -26,7 +21,6 @@ pub enum HandlerWrapper {
     PreGame(pre_game::PreGameHandler),
     IdentityAssignment(identity_assignment::IdentityAssignmentHandler),
 }
-
 
 impl ActionHandler for HandlerWrapper {
     fn draw(&mut self, shared: &mut SharedState) {
@@ -57,6 +51,7 @@ pub struct SharedState {
     pub outbox: VecDeque<common::ClientMessage>,
     pub user_name: Option<String>,
     pub players: Vec<common::Player>,
+    pub chat_messages: VecDeque<String>,
 }
 
 impl SharedState {
@@ -71,11 +66,10 @@ impl SharedState {
             outbox: VecDeque::new(),
             user_name: None,
             players: Vec::new(),
+            chat_messages: VecDeque::new(),
         }
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct State {
@@ -115,7 +109,10 @@ impl State {
             },
             (HandlerWrapper::PreGame(_), ServerMessage::Advance) => {
                 self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new());
-            }, 
+            },
+            (HandlerWrapper::PreGame(_), ServerMessage::Chat{user_name, message}) => {
+                self.shared.chat_messages.push_back(format!("{}: {}", user_name, message));
+            },
             (_, ServerMessage::Advance) => {}, // TODO handle this more carefully
             (_, ServerMessage::StatusUpdate{players: _}) => {
                 // ignore for non pregame ... change later on

@@ -100,6 +100,28 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
         common::ClientMessage::Hello => {
             println!("user thread {} says hello.", id);
         },
+        common::ClientMessage::Chat { message } => {
+            let user_name = state
+                .shared
+                .players
+                .iter()
+                .find(|player| player.thread_id == id)
+                .unwrap()
+                .player_id
+                .clone();
+
+            for player in state.shared.players.clone() {
+                if player.connection_status == ConnectionStatus::Connected {
+                    state.queue_message(
+                        player.thread_id,
+                        ServerMessage::Chat {
+                            user_name: user_name.clone(),
+                            message: message.clone(),
+                        },
+                    );
+                }
+            }
+        }
         common::ClientMessage::StillAlive => {
             // ignore here, as it is handled by communicate module
         },
