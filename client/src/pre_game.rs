@@ -30,6 +30,11 @@ impl state::ActionHandler for PreGameHandler {
             false => String::from("    [Press Enter If Ready]    "),
         };
 
+        let players_string = match shared.players.len() {
+            1 => String::from("1 Player"),
+            _ => format!("{} Players", shared.players.len())
+        };
+
         let _res = queue!(
             stdout(),
             cursor::MoveTo(0,7),
@@ -39,30 +44,37 @@ impl state::ActionHandler for PreGameHandler {
             cursor::MoveTo(1,10),
             Print(ready_string),
             cursor::MoveTo(1,13),
-            Print("Players"),
+            Print(players_string),
         );
 
         for (rel_line, player) in shared.players.iter().enumerate() {
             let player_str = match player.connection_status {
-                common::ConnectionStatus::Connected => player.player_id.clone(),
+                common::ConnectionStatus::Connected => {
+                    if player.ready {
+                        format!("{:14} (ready)", player.player_id)
+                    } else {
+                        player.player_id.clone()
+                    }
+                },
                 common::ConnectionStatus::Disconnected => format!("{:14} (disconnected)", player.player_id),
             };
             let _res = queue!(
                 stdout(),
-                cursor::MoveTo(1,12+rel_line as u16),
+                cursor::MoveTo(1,15+rel_line as u16),
                 Print(player_str)
             );
         }
 
     }
 
-    fn handle_event(&mut self, _: &mut state::SharedState, event: event::KeyEvent) {
+    fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
         match event {
             KeyEvent{
                 code: KeyCode::Enter,
                 modifiers: _,
             } => {
                 self.ready = !self.ready;
+                shared.outbox.push_back(common::ClientMessage::Ready{ready: self.ready});
             }
             _ => {},
         }

@@ -60,8 +60,8 @@ impl GameState {
 }
 
 pub fn update_state(state: &mut crate::state::GameState, message: common::ClientMessage, id: usize) {
-    // println!("update state using message: {:?}", message);
-
+    
+    // server message processing
     match message {
         common::ClientMessage::Connect{name} => {
             if !state.shared.outboxes.contains_key(&id) {
@@ -89,6 +89,11 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                 state.shared.players.push(Player::new(name.clone(), id));
                 state.queue_message(id, 
                     ServerMessage::Connected { user_name: name });
+            }
+        },
+        common::ClientMessage::Ready{ready} => {
+            if let Some(player) = state.shared.players.iter_mut().find(|player| player.thread_id == id) {
+                player.ready = ready;
             }
         },
         common::ClientMessage::Hello => {

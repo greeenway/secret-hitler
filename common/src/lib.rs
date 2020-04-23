@@ -16,6 +16,7 @@ pub enum ClientMessage {
     Hello,
     Connect {name: String},
     StillAlive,
+    Ready {ready: bool},
     Quit,
 }
 
@@ -30,6 +31,7 @@ pub struct Player {
     pub player_id: String,
     pub connection_status: ConnectionStatus,
     pub thread_id: usize,
+    pub ready: bool,
 }
 
 impl Player {
@@ -38,6 +40,7 @@ impl Player {
             player_id: player_id,
             connection_status: ConnectionStatus::Connected,
             thread_id: thread_id,
+            ready: false,
         }
     }
 }
