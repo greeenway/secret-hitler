@@ -1,121 +1,28 @@
 use std::collections::VecDeque;
 
-use std::io::{stdout, Write};
-use crossterm::{event, queue, cursor};
-use crossterm::style::{Print};
-use crossterm::event::{KeyEvent, KeyCode};
+use crossterm::{event};
+// use crossterm::style::{Print};
+// use crossterm::event::{KeyEvent, KeyCode};
 
 use common::ServerMessage;
 
-trait ActionHandler {
+use crate::login_screen;
+use crate::pre_game;
+
+
+pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
     fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent);
 }
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct LoginScreenHandler {
-    input: String
-}
 
 
-impl LoginScreenHandler {
-    pub fn new() -> LoginScreenHandler {
-        LoginScreenHandler {
-            input: String::from(""), // TODO add check for empty user name
-        }
-    }
-}
 
-impl ActionHandler for LoginScreenHandler {
-    fn draw(&mut self, _: &mut SharedState) {
-        let _res = queue!(
-            stdout(),
-            cursor::MoveTo(0,7),
-            Print("** LoginScreen **"),
-            cursor::MoveTo(1,8),
-            Print(format!("user: {}", self.input)),
-
-        );
-    }
-
-    fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
-        match event {
-            KeyEvent{
-                code: KeyCode::Char(c),
-                modifiers: _,
-            } => {
-                self.input = format!("{}{}", self.input, c);
-            }
-            KeyEvent{
-                code: KeyCode::Backspace,
-                modifiers: _,
-            } => {
-                self.input.pop();
-            },
-            KeyEvent{
-                code: KeyCode::Enter,
-                modifiers: _,
-            } => {
-                shared.outbox.push_back(common::ClientMessage::Connect{name: self.input.clone()});
-            },
-            _ => {},
-        }
-    }
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct PreGameHandler {
-    
-}
-
-impl PreGameHandler {
-    pub fn new() -> PreGameHandler {
-        PreGameHandler {
-            
-        }
-    }
-}
-
-impl ActionHandler for PreGameHandler {
-    fn draw(&mut self, shared: &mut SharedState) {
-        let mut user = String::from("- unknown -");
-        if let Some(user_name) = shared.user_name.clone() {
-            user = user_name;
-        }
-
-        let _res = queue!(
-            stdout(),
-            cursor::MoveTo(0,7),
-            Print("** PreGame **"),
-            cursor::MoveTo(1,8),
-            Print(format!("connected as {}", user)),
-            cursor::MoveTo(1,10),
-            Print("Players"),
-        );
-
-        for (rel_line, player) in shared.players.iter().enumerate() {
-            let player_str = match player.connection_status {
-                common::ConnectionStatus::Connected => player.player_id.clone(),
-                common::ConnectionStatus::Disconnected => format!("{:12} (disconnected)", player.player_id),
-            };
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(1,12+rel_line as u16),
-                Print(player_str)
-            );
-        }
-
-    }
-
-    fn handle_event(&mut self, _: &mut SharedState, _: event::KeyEvent) {
-        
-    }
-}
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum HandlerWrapper {
-    LoginScreen(LoginScreenHandler),
-    PreGame(PreGameHandler),
+    LoginScreen(login_screen::LoginScreenHandler),
+    PreGame(pre_game::PreGameHandler),
 }
 
 
@@ -175,7 +82,7 @@ pub struct State {
 impl State {
     pub fn new() -> State {
         State {
-            handler: HandlerWrapper::LoginScreen(LoginScreenHandler::new()),
+            handler: HandlerWrapper::LoginScreen(login_screen::LoginScreenHandler::new()),
             shared: SharedState::new(),
         }
     }
@@ -192,11 +99,11 @@ impl State {
         match (self.handler.clone(), message) {
         
             (HandlerWrapper::LoginScreen(_), ServerMessage::Reconnected{user_name}) => {
-                self.handler = HandlerWrapper::PreGame(PreGameHandler::new());
+                self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new());
                 self.shared.user_name = Some(user_name);
             },
             (HandlerWrapper::LoginScreen(_), ServerMessage::Connected{user_name}) => {
-                self.handler = HandlerWrapper::PreGame(PreGameHandler::new());
+                self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new());
                 self.shared.user_name = Some(user_name);
             },
             (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {

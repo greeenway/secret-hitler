@@ -27,8 +27,13 @@ mod state;
 use state::State;
 use common::ServerMessage;
 
+mod login_screen;
+mod pre_game;
 
 
+// TODO: refactor main.rs of client into multiple files (per state? at least)
+// TODO: send ready messages from client if pregame and ready
+// TODO: collect ready messages at server and set collect states of ready players
 
 
 
