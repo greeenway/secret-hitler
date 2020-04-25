@@ -124,7 +124,7 @@ fn main() -> Result<()> {
     // Resize terminal and scroll up.
     queue!(
         stdout(),
-        SetSize(80, 30),
+        SetSize(72, 22),
     )?;
     
     
@@ -146,7 +146,7 @@ fn main() -> Result<()> {
                 // let _res = queue!(stdout(), MoveTo(0,0), Print("Hallo Welt"));
                 for (line_number, line) in data.shared.output.iter().enumerate() {
                     let mut line_trucated = line.clone();
-                    line_trucated.truncate(80);
+                    line_trucated.truncate(70);
                     let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line_trucated));
                 }
 
