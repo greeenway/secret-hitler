@@ -4,6 +4,8 @@ use std::thread;
 use std::time;
 
 
+use rand::prelude::*;
+
 extern crate common;
 use crate::state::State;
 use common::{ServerMessage, ConnectionStatus};
@@ -104,8 +106,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     // TODO assign identities randomly
                     // TODO enable rejoin after the game started
                     if identities_assigned == false {
-                        let mut fascist_number = 0;
-                        let mut liberal_number = 0;
+                        let mut number_fascists = 0;
     
     
                         let player_number =  data.shared.player_number.unwrap();
@@ -114,72 +115,64 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             1 => {
                                 // invalid only for debugging
                                 data.shared.fascist_known_by_hitler = Some(true);
-                                fascist_number = 1;
+                                number_fascists = 1;
                             },
                             2 => {
                                 // invalid only for debugging
                                 data.shared.fascist_known_by_hitler = Some(true);
-                                fascist_number = 1;
+                                number_fascists = 1;
                             },
                             3 => {
                                 // invalid only for debugging
                                 data.shared.fascist_known_by_hitler = Some(true);
-                                fascist_number = 2;
+                                number_fascists = 2;
                             },
                             5 => {
                                 data.shared.fascist_known_by_hitler = Some(true);
-                                fascist_number = 2;
+                                number_fascists = 2;
                             },
                             6 => {
                                 data.shared.fascist_known_by_hitler = Some(true);
-                                fascist_number = 2;
+                                number_fascists = 2;
                             },
                             7 => {
                                 data.shared.fascist_known_by_hitler = Some(false);
-                                fascist_number = 3;
+                                number_fascists = 3;
                             },
                             8 => {
                                 data.shared.fascist_known_by_hitler = Some(false);
-                                fascist_number = 3;
+                                number_fascists = 3;
                             },
                             9 => {
                                 data.shared.fascist_known_by_hitler = Some(false);
-                                fascist_number = 4;
+                                number_fascists = 4;
                             }
                             10 => {
                                 data.shared.fascist_known_by_hitler = Some(false);
-                                fascist_number = 4;
+                                number_fascists = 4;
                             },
-                            _ => panic!("This should never happen: player count {}", player_number),
+                            _ => panic!("This should never happen: player count {}, fascists {}", player_number, number_fascists),
                         }
-                        liberal_number = player_number - fascist_number;
+
     
-                        // assign memberships
-                        match player_number {
-                            1 => {
-                                // debug only
-                                data.shared.players[0].is_hitler = Some(true);
-                                data.shared.players[0].party_membership = Some(common::PartyMembership::Fascist);   
-                            },
-                            2 => {
-                                // debug only
-                                data.shared.players[0].is_hitler = Some(true);
-                                data.shared.players[0].party_membership = Some(common::PartyMembership::Fascist);
-                                data.shared.players[1].is_hitler = Some(false);
-                                data.shared.players[1].party_membership = Some(common::PartyMembership::Fascist);
-                            },
-                            3 => {
-                                // debug only
-                                data.shared.players[0].is_hitler = Some(true);
-                                data.shared.players[0].party_membership = Some(common::PartyMembership::Fascist);
-                                data.shared.players[1].is_hitler = Some(false);
-                                data.shared.players[1].party_membership = Some(common::PartyMembership::Fascist);
-                                data.shared.players[2].is_hitler = Some(false);
-                                data.shared.players[2].party_membership = Some(common::PartyMembership::Liberal);
-                            },
-    
-                            _ => {},
+                        // assign hitler and party memberships
+                        let mut rng = rand::thread_rng();
+                        let mut nums: Vec<u8> = (0..player_number).collect();
+                        nums.shuffle(&mut rng);
+
+                        for (i, num) in nums.iter().enumerate() {
+                            if *num == 0 {
+                                data.shared.players[i].is_hitler = Some(true);
+                                data.shared.players[i].party_membership = Some(common::PartyMembership::Fascist);
+                            } else if *num <= number_fascists - 1  {
+                                data.shared.players[i].is_hitler = Some(false);
+                                data.shared.players[i].party_membership = Some(common::PartyMembership::Fascist);
+                            } else {
+                                data.shared.players[i].is_hitler = Some(false);
+                                data.shared.players[i].party_membership = Some(common::PartyMembership::Liberal);
+                            }
                         }
+                        
                         data.state = State::IdentityAssignment {identities_assigned: true };
                     }
 
