@@ -31,7 +31,8 @@ impl SharedState {
 pub enum State {
     Pregame,
     IdentityAssignment {identities_assigned: bool},
-    Election {fail_count: u8, last_president: Option<String>, last_chancelor: Option<String>},
+    Nomination {last_president: Option<String>, last_chancelor: Option<String>, presidential_nominee: String},
+    Election {fail_count: u8, presidential_nominee: String, chancelor_nominee: String},
     GameOver,
 }
 

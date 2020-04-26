@@ -67,6 +67,7 @@ pub enum ServerMessage {
     Rejected {reason: String},           //
     StatusUpdate {players: Vec<Player>}, // regular update of selected game state
     Advance,                             // server pushes users to next state
+    AdvanceNomination {presidential_nominee: String},
     Chat {user_name: String, message: String}
 }
 

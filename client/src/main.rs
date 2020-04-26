@@ -31,6 +31,7 @@ mod render; // common render stuff
 mod login_screen;
 mod pre_game;
 mod identity_assignment;
+mod nomination;
 mod election;
 
 

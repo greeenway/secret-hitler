@@ -182,22 +182,31 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
                     if all_players_ready(data.shared.players.clone()) {// minimum players should be changed to 5
 
-                        for player in data.shared.players.clone() {
-                            data.queue_message(
-                                player.thread_id,
-                                ServerMessage::Advance,
-                            );
-                        }
-                        println!("sent advance to election!");
-                        data.state = State::Election{fail_count: 0, last_president: None, last_chancelor: None};
+                        
+                        
+
+                        let mut rng = rand::thread_rng();
+                        let mut nums: Vec<u8> = (0..data.shared.player_number.unwrap()).collect();
+                        nums.shuffle(&mut rng);
+                        let first_nominee = data.shared.players[nums[0] as usize].player_id.clone(); // TODO pick random player more efficiently
+
+                        data.state = State::Nomination{last_president: None, last_chancelor: None, presidential_nominee: first_nominee.clone()};
                         
                         // TODO create function to set all players to not ready
                         data.shared.players = data.shared.players.iter_mut().
-                            map(|player| {player.ready = false; player.clone()}).collect();
+                        map(|player| {player.ready = false; player.clone()}).collect();
+
+                        for player in data.shared.players.clone() {
+                            data.queue_message(
+                                player.thread_id,
+                                ServerMessage::AdvanceNomination{presidential_nominee: first_nominee.clone()},
+                            );
+                        }
+                        println!("sent advance to nomination!");
                     }
-                    
+
                 },
-                State::Election {fail_count: _, last_president: _, last_chancelor: _} => {
+                State::Election {fail_count: _, presidential_nominee: _, chancelor_nominee: _} => {
                     println!("election state!!!");
                 }
                 _ => {}
