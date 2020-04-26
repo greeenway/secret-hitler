@@ -27,6 +27,7 @@ mod state;
 use state::State;
 use common::ServerMessage;
 
+mod render; // common render stuff
 mod login_screen;
 mod pre_game;
 mod identity_assignment;

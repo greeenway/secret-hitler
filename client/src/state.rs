@@ -49,7 +49,7 @@ pub struct SharedState {
     pub max_cmd_lines: usize,
     pub inbox: VecDeque<common::ServerMessage>,
     pub outbox: VecDeque<common::ClientMessage>,
-    pub user_name: Option<String>,
+    // pub user_name: Option<String>,
     pub players: Vec<common::Player>,
     pub chat_messages: VecDeque<String>,
 }
@@ -64,7 +64,7 @@ impl SharedState {
             max_cmd_lines: 5,
             inbox: VecDeque::new(),
             outbox: VecDeque::new(),
-            user_name: None,
+            // user_name: None,
             players: Vec::new(),
             chat_messages: VecDeque::new(),
         }
@@ -97,25 +97,28 @@ impl State {
         match (self.handler.clone(), message) {
         
             (HandlerWrapper::LoginScreen(_), ServerMessage::Reconnected{user_name}) => {
-                self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new());
-                self.shared.user_name = Some(user_name);
+                self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new(user_name));
+                // self.shared.user_name = Some(user_name);
             },
             (HandlerWrapper::LoginScreen(_), ServerMessage::Connected{user_name}) => {
-                self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new());
-                self.shared.user_name = Some(user_name);
+                self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new(user_name));
+                // self.shared.user_name = Some(user_name);
             },
-            (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {
-                self.shared.players = players;
-            },
-            (HandlerWrapper::PreGame(_), ServerMessage::Advance) => {
-                self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new());
+            // (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {
+            //     self.shared.players = players;
+            // },
+            (HandlerWrapper::PreGame(pre_game::PreGameHandler{ready:_, player_id}), ServerMessage::Advance) => {
+                self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id));
             },
             (HandlerWrapper::PreGame(_), ServerMessage::Chat{user_name, message}) => {
                 self.shared.chat_messages.push_back(format!("{}: {}", user_name, message));
             },
             (_, ServerMessage::Advance) => {}, // TODO handle this more carefully
-            (_, ServerMessage::StatusUpdate{players: _}) => {
-                // ignore for non pregame ... change later on
+            // (HandlerWrapper::IdentityAssignment(_), ServerMessage::StatusUpdate{players}) => {
+            //     self.shared.players = players;
+            // },
+            (_, ServerMessage::StatusUpdate{players}) => {
+                self.shared.players = players;
             },
 
             (state, message) => {

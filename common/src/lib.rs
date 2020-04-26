@@ -22,6 +22,12 @@ pub enum ClientMessage {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum PartyMembership {
+    Fascist,
+    Liberal,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ConnectionStatus {
     Connected,
     Disconnected,
@@ -33,6 +39,8 @@ pub struct Player {
     pub connection_status: ConnectionStatus,
     pub thread_id: usize,
     pub ready: bool,
+    pub party_membership: Option<PartyMembership>,
+    pub is_hitler: Option<bool>,
 }
 
 impl Player {
@@ -42,6 +50,8 @@ impl Player {
             connection_status: ConnectionStatus::Connected,
             thread_id: thread_id,
             ready: false,
+            party_membership: None,
+            is_hitler: None,
         }
     }
 }
@@ -87,6 +97,8 @@ impl Configuration {
         let mut server_address: Option<String> = None;
         let mut server_listen: Option<String> = None;
         let mut tmp_port: Option<String> = None;
+         
+        // TODO make debug console optional from config
 
 
         if let yaml_rust::yaml::Yaml::String(s) = root["server_address"].clone() {

@@ -7,26 +7,29 @@ use crate::state;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct PreGameHandler {
-    ready: bool,
+    pub ready: bool,
+    pub player_id: String,
 }
 
 // TODO disable joining of new users after pregame is completed
 // TODO only advance once after pregame
 
 impl PreGameHandler {
-    pub fn new() -> PreGameHandler {
+    pub fn new(player_id: String) -> PreGameHandler {
         PreGameHandler {
             ready: false,
+            player_id,
         }
     }
 }
 
 impl state::ActionHandler for PreGameHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
-        let mut user = String::from("- unknown -");
-        if let Some(user_name) = shared.user_name.clone() {
-            user = user_name;
-        }
+        // let mut user = String::from("- unknown -");
+        // if let Some(user_name) = shared.user_name.clone() {
+        //     user = user_name;
+        // }
+        let user = self.player_id.clone();
 
         let ready_string = match self.ready {
             true => String::from("    [ready] "),
@@ -50,31 +53,15 @@ impl state::ActionHandler for PreGameHandler {
             Print(players_string),
         );
 
-        for (rel_line, player) in shared.players.iter().enumerate() {
-            let player_str = match player.connection_status {
-                common::ConnectionStatus::Connected => {
-                    if player.ready {
-                        format!("{:14} (ready)", player.player_id)
-                    } else {
-                        player.player_id.clone()
-                    }
-                },
-                common::ConnectionStatus::Disconnected => format!("{:14} (disconnected)", player.player_id),
-            };
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(1,15+rel_line as u16),
-                Print(player_str)
-            );
-        }
+        crate::render::display_player_names(&shared);
 
-        for (rel_line, chat_message) in shared.chat_messages.iter().enumerate() {
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(1, 25 + rel_line as u16),
-                Print(chat_message)
-            );
-        }
+        // for (rel_line, chat_message) in shared.chat_messages.iter().enumerate() {
+        //     let _res = queue!(
+        //         stdout(),
+        //         cursor::MoveTo(1, 25 + rel_line as u16),
+        //         Print(chat_message)
+        //     );
+        // }
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {

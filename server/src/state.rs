@@ -10,6 +10,9 @@ use common::Player;
 pub struct SharedState {
     pub players: Vec<Player>,
     pub outboxes: HashMap<usize, VecDeque<ServerMessage>>,
+    pub fascist_known_by_hitler: Option<bool>,
+    pub player_number: Option<u8>,
+    pub identities_assigned: bool,
 }
 
 impl SharedState {
@@ -17,6 +20,9 @@ impl SharedState {
         SharedState {
             players: Vec::new(),
             outboxes: HashMap::new(),
+            fascist_known_by_hitler: None,
+            player_number: None,
+            identities_assigned: false, // TODO: only needed in one state, find other solution
         }
     }
 }
@@ -24,7 +30,7 @@ impl SharedState {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum State {
     Pregame,
-    IdentityAssignment,
+    IdentityAssignment {identities_assigned: bool},
     GameOver,
 }
 
