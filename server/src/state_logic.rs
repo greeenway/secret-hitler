@@ -10,6 +10,13 @@ extern crate common;
 use crate::state::State;
 use common::{ServerMessage, ConnectionStatus};
 
+pub fn all_players_ready(players: Vec<common::Player>) -> bool {
+    let ready_count = players.iter().filter(|player| player.ready == true).count();
+    let online_count = players.iter().
+        filter(|player| player.connection_status == ConnectionStatus::Connected).count();
+    (ready_count == online_count)
+}
+
 pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Result<()> {
     loop {
         {
@@ -35,8 +42,6 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                     player.thread_id,
                                     ServerMessage::StatusUpdate{players: current_players.clone()}
                                 );
-                                println!("players {:?}", current_players);
-                                println!("sent to fascist or hitler {}", player.player_id);
                             } else {
                                 // hide party member ships for hitler
                                 let players_with_hidden_memberships = current_players.clone().iter_mut().map(|player_it| {
@@ -50,7 +55,6 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                     player.thread_id,
                                     ServerMessage::StatusUpdate{players: players_with_hidden_memberships}
                                 );
-                                println!("sent to hitler {}", player.player_id);
                             }
                         },
                         Some(common::PartyMembership::Liberal) => {
@@ -66,7 +70,6 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 player.thread_id,
                                 ServerMessage::StatusUpdate{players: players_with_hidden_memberships}
                             );
-                            println!("sent to liberal {}", player.player_id);
                         },
                         None => {
                             data.queue_message(
@@ -83,14 +86,13 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
             match data.state {
                 State::Pregame => {
-                    let ready_count = data.shared.players.iter().filter(|player| player.ready == true).count();
                     let online_count = data.shared.players.iter().
                         filter(|player| player.connection_status == ConnectionStatus::Connected).count();
-
-                    if ready_count == online_count && online_count >= 1 { // TODO later this should be changed to 5 
+                    if all_players_ready(data.shared.players.clone()) && online_count >= 1 {// minimum players should be changed to 5
                         // fix player count
                         data.shared.player_number = Some(online_count as u8);
-
+                        
+                        // TODO create helper function for this
                         for player in data.shared.players.clone() {
                             data.queue_message(
                                 player.thread_id,
@@ -108,7 +110,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     if identities_assigned == false {
                         let mut number_fascists = 0;
     
-    
+                        
                         let player_number =  data.shared.player_number.unwrap();
     
                         match player_number {
@@ -174,9 +176,29 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         }
                         
                         data.state = State::IdentityAssignment {identities_assigned: true };
+
+
                     }
 
+                    if all_players_ready(data.shared.players.clone()) {// minimum players should be changed to 5
 
+                        for player in data.shared.players.clone() {
+                            data.queue_message(
+                                player.thread_id,
+                                ServerMessage::Advance,
+                            );
+                        }
+                        println!("sent advance to election!");
+                        data.state = State::Election{fail_count: 0, last_president: None, last_chancelor: None};
+                        
+                        // TODO create function to set all players to not ready
+                        data.shared.players = data.shared.players.iter_mut().
+                            map(|player| {player.ready = false; player.clone()}).collect();
+                    }
+                    
+                },
+                State::Election {fail_count: _, last_president: _, last_chancelor: _} => {
+                    println!("election state!!!");
                 }
                 _ => {}
             }

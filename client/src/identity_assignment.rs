@@ -1,7 +1,7 @@
 use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
-// use crossterm::event::{KeyEvent, KeyCode};
+use crossterm::event::{KeyEvent, KeyCode}; //, KeyCode};
 use crossterm::style::{style, Color, Attribute};
 
 
@@ -10,14 +10,16 @@ use common::PartyMembership;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct IdentityAssignmentHandler {
-    player_id: String,
+    pub player_id: String,
+    pub ready: bool,
 }
 
 
 impl IdentityAssignmentHandler {
     pub fn new(player_id: String,) -> IdentityAssignmentHandler {
-        IdentityAssignmentHandler {
+        Self {
             player_id,
+            ready: false,
         }
     }
 }
@@ -61,6 +63,9 @@ impl state::ActionHandler for IdentityAssignmentHandler {
             Print("** Identity Assignment **"),
         );
 
+        
+
+
         if assignment_ready {
             let _res = queue!(
                 stdout(),
@@ -79,6 +84,18 @@ impl state::ActionHandler for IdentityAssignmentHandler {
                     Print("."),
                 );
             }
+
+            let ready_string = match self.ready {
+                true => String::from("    [ready] "),
+                false => String::from("    [Press Enter If Ready]    "),
+            };
+    
+    
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(1,11),
+                Print(ready_string),
+            );
             
 
 
@@ -95,26 +112,15 @@ impl state::ActionHandler for IdentityAssignmentHandler {
         crate::render::display_player_names(&shared);
     }
 
-    fn handle_event(&mut self, _: &mut state::SharedState, event: event::KeyEvent) {
+    fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
         match event {
-            // KeyEvent{
-            //     code: KeyCode::Char(c),
-            //     modifiers: _,
-            // } => {
-            //     self.input = format!("{}{}", self.input, c);
-            // }
-            // KeyEvent{
-            //     code: KeyCode::Backspace,
-            //     modifiers: _,
-            // } => {
-            //     self.input.pop();
-            // },
-            // KeyEvent{
-            //     code: KeyCode::Enter,
-            //     modifiers: _,
-            // } => {
-            //     shared.outbox.push_back(common::ClientMessage::Connect{name: self.input.clone()});
-            // },
+            KeyEvent{
+                code: KeyCode::Enter,
+                modifiers: _,
+            } => {
+                self.ready = !self.ready;
+                shared.outbox.push_back(common::ClientMessage::Ready{ready: self.ready});
+            }
             _ => {},
         }
     }

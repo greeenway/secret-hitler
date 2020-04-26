@@ -13,7 +13,7 @@ pub struct LoginScreenHandler {
 
 impl LoginScreenHandler {
     pub fn new() -> LoginScreenHandler {
-        LoginScreenHandler {
+        Self {
             input: String::from(""), // TODO add check for empty user name
         }
     }

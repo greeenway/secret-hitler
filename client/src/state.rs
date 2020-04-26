@@ -9,6 +9,7 @@ use common::ServerMessage;
 use crate::login_screen;
 use crate::pre_game;
 use crate::identity_assignment;
+use crate::election;
 
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -20,6 +21,7 @@ pub enum HandlerWrapper {
     LoginScreen(login_screen::LoginScreenHandler),
     PreGame(pre_game::PreGameHandler),
     IdentityAssignment(identity_assignment::IdentityAssignmentHandler),
+    Election(election::ElectionHandler),
 }
 
 impl ActionHandler for HandlerWrapper {
@@ -28,6 +30,7 @@ impl ActionHandler for HandlerWrapper {
             HandlerWrapper::LoginScreen(inner_handler) => inner_handler.draw(shared),
             HandlerWrapper::PreGame(inner_handler) => inner_handler.draw(shared),
             HandlerWrapper::IdentityAssignment(inner_handler) => inner_handler.draw(shared),
+            HandlerWrapper::Election(inner_handler) => inner_handler.draw(shared),
         }
     }
 
@@ -36,6 +39,7 @@ impl ActionHandler for HandlerWrapper {
             HandlerWrapper::LoginScreen(inner_handler) => inner_handler.handle_event(shared, event),
             HandlerWrapper::PreGame(inner_handler) => inner_handler.handle_event(shared, event),
             HandlerWrapper::IdentityAssignment(inner_handler) => inner_handler.handle_event(shared, event),
+            HandlerWrapper::Election(inner_handler) => inner_handler.handle_event(shared, event),
         }
     }
 }
@@ -54,6 +58,7 @@ pub struct SharedState {
     pub players: Vec<common::Player>,
     pub chat_messages: VecDeque<String>,
 }
+
 
 impl SharedState {
     pub fn new(config: common::Configuration) -> SharedState {
@@ -111,6 +116,9 @@ impl State {
             // },
             (HandlerWrapper::PreGame(pre_game::PreGameHandler{ready:_, player_id}), ServerMessage::Advance) => {
                 self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id));
+            },
+            (HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler{player_id, ready: _}), ServerMessage::Advance) => {
+                self.handler = HandlerWrapper::Election(election::ElectionHandler::new(player_id, 0, None, None));
             },
             (HandlerWrapper::PreGame(_), ServerMessage::Chat{user_name, message}) => {
                 self.shared.chat_messages.push_back(format!("{}: {}", user_name, message));

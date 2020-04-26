@@ -16,7 +16,7 @@ pub struct PreGameHandler {
 
 impl PreGameHandler {
     pub fn new(player_id: String) -> PreGameHandler {
-        PreGameHandler {
+        Self {
             ready: false,
             player_id,
         }
