@@ -18,7 +18,7 @@ fn main() -> std::io::Result<()> {
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
 
     let data = Arc::new(Mutex::new(
-        state::GameState::new()
+        state::GameState::new(config.clone())
     ));
 
     let state_data = Arc::clone(&data);

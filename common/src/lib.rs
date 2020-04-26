@@ -70,9 +70,11 @@ pub enum ServerMessage {
     Chat {user_name: String, message: String}
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Configuration {
     pub server_address_and_port: String,
     pub server_listen_address_and_port: String,
+    pub enable_debug_console: bool,
 }
 
 impl Configuration {
@@ -97,10 +99,10 @@ impl Configuration {
         let mut server_address: Option<String> = None;
         let mut server_listen: Option<String> = None;
         let mut tmp_port: Option<String> = None;
-         
-        // TODO make debug console optional from config
+        let mut enable_debug_console: Option<bool> = None;
 
 
+        // TODO catch wrong config files, and print reasonable output message
         if let yaml_rust::yaml::Yaml::String(s) = root["server_address"].clone() {
             server_address = Some(s);
         }
@@ -110,12 +112,16 @@ impl Configuration {
         if let yaml_rust::yaml::Yaml::String(s) = root["port"].clone() {
             tmp_port = Some(s);
         }
+        if let yaml_rust::yaml::Yaml::Boolean(b) = root["enable_debug_console"].clone() {
+            enable_debug_console = Some(b);
+        }
 
         let port = tmp_port.unwrap();
 
         Ok (Self {
             server_address_and_port: String::from(format!("{}:{}", server_address.unwrap(), port)),
             server_listen_address_and_port: String::from(format!("{}:{}", server_listen.unwrap(), port)),
+            enable_debug_console: enable_debug_console.unwrap(),
         })
     }
 

@@ -89,7 +89,7 @@ fn main() -> Result<()> {
     }
 
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
-    let stream = TcpStream::connect(config.server_address_and_port)?;
+    let stream = TcpStream::connect(config.clone().server_address_and_port)?;
 
     // let mut done = false;
     let write_stream = stream.try_clone()?;
@@ -99,7 +99,7 @@ fn main() -> Result<()> {
     send_message(&write_stream, message, Show::DontPrintMessage);
     let alive_stream = stream.try_clone()?;
 
-    let client_state = Arc::new(Mutex::new(State::new()));
+    let client_state = Arc::new(Mutex::new(State::new(config.clone())));
 
     // let stop_alive_thread = Arc::new(Mutex::new(false));
     let stop_alive_copy = Arc::clone(&client_state);
@@ -144,20 +144,21 @@ fn main() -> Result<()> {
 
                 data.draw();
 
-                // let _res = queue!(stdout(), MoveTo(0,0), Print("Hallo Welt"));
-                for (line_number, line) in data.shared.output.iter().enumerate() {
-                    let mut line_trucated = line.clone();
-                    line_trucated.truncate(70);
-                    let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line_trucated));
-                }
-
-                if data.shared.cmd_prompt {
-                    let _res = queue!(
-                        stdout(),
-                        MoveTo(0,0),
-                        Print("> "),
-                        Print(data.shared.input.clone()),
-                    );
+                if data.shared.enable_debug_console {
+                    for (line_number, line) in data.shared.output.iter().enumerate() {
+                        let mut line_trucated = line.clone();
+                        line_trucated.truncate(70);
+                        let _res = queue!(stdout(), MoveTo(0, line_number as u16 + 1), Print(line_trucated));
+                    }
+    
+                    if data.shared.cmd_prompt {
+                        let _res = queue!(
+                            stdout(),
+                            MoveTo(0,0),
+                            Print("> "),
+                            Print(data.shared.input.clone()),
+                        );
+                    }
                 }
             }
             let _res = stdout().flush();
@@ -180,7 +181,9 @@ fn main() -> Result<()> {
                             code: KeyCode::Char('0'),
                             modifiers: _,
                         } => {
-                            data.shared.cmd_prompt = !data.shared.cmd_prompt;
+                            if data.shared.enable_debug_console {
+                                data.shared.cmd_prompt = !data.shared.cmd_prompt;
+                            }
                         },
                         KeyEvent{
                             code: KeyCode::Esc,

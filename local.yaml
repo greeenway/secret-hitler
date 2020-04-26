@@ -1,3 +1,4 @@
 server_address: "127.0.0.1"
 server_listen: "127.0.0.1"
 port: "54327"
+enable_debug_console: false

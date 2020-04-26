@@ -16,7 +16,7 @@ pub struct SharedState {
 }
 
 impl SharedState {
-    pub fn new() -> SharedState {
+    pub fn new(_: common::Configuration) -> SharedState {
         SharedState {
             players: Vec::new(),
             outboxes: HashMap::new(),
@@ -42,10 +42,10 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new() -> GameState {
+    pub fn new(config: common::Configuration) -> GameState {
         GameState {
             state: State::Pregame,
-            shared: SharedState::new(),
+            shared: SharedState::new(config),
         }
     }
 

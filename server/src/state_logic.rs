@@ -101,7 +101,8 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
                 },
                 State::IdentityAssignment {identities_assigned } => {
-                    // for now use this as a proxy to figure out if we already assigned roles
+                    // TODO assign identities randomly
+                    // TODO enable rejoin after the game started
                     if identities_assigned == false {
                         let mut fascist_number = 0;
                         let mut liberal_number = 0;

@@ -43,6 +43,7 @@ impl ActionHandler for HandlerWrapper {
 #[derive(Debug)]
 pub struct SharedState {
     pub cmd_prompt: bool,
+    pub enable_debug_console: bool,
     pub input: String,
     pub output: VecDeque<String>,
     pub done: bool,
@@ -55,9 +56,10 @@ pub struct SharedState {
 }
 
 impl SharedState {
-    pub fn new() -> SharedState {
+    pub fn new(config: common::Configuration) -> SharedState {
         SharedState {
             cmd_prompt: false,
+            enable_debug_console: config.enable_debug_console,
             input: String::from(""),
             output: VecDeque::new(),
             done: false,
@@ -78,10 +80,10 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> State {
+    pub fn new(config: common::Configuration) -> State {
         State {
             handler: HandlerWrapper::LoginScreen(login_screen::LoginScreenHandler::new()),
-            shared: SharedState::new(),
+            shared: SharedState::new(config),
         }
     }
 
