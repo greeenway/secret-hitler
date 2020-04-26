@@ -79,7 +79,7 @@ impl state::ActionHandler for IdentityAssignmentHandler {
             if my_player.is_hitler.unwrap() {
                 let _res = queue!(
                     stdout(),
-                    Print("Your are the secret "),
+                    Print("You are the secret "),
                     Print(hitler_string),
                     Print("."),
                 );
