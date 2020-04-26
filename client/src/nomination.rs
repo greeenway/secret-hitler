@@ -56,7 +56,7 @@ impl state::ActionHandler for NominationHandler {
         if self.is_president {
             let _res = queue!(
                 stdout(),
-                Print("You are presidential nominee, please select your chancelor: "),
+                Print(format!("{}, you are presidential nominee, please select your chancelor: ", self.player_id)),
             );
             if let Some(selected_index) = self.selected_index {
                 let mut draw_index = 0;
