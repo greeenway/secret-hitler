@@ -32,14 +32,14 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
             for player in data.shared.players.clone() {
                 if player.connection_status == ConnectionStatus::Connected {
-
+                    let state = data.state.clone();
                     match player.party_membership {
                         Some(common::PartyMembership::Fascist) => {
                             // if data.shared.fascist_known_by_hitler
                             if player.is_hitler.unwrap() == false || data.shared.fascist_known_by_hitler.unwrap() {
                                 data.queue_message(
                                     player.thread_id,
-                                    ServerMessage::StatusUpdate{players: current_players.clone()}
+                                    ServerMessage::StatusUpdate{players: current_players.clone(), state: state, player_id: Some(player.player_id)}
                                 );
                             } else {
                                 // hide party member ships for hitler
@@ -52,7 +52,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 }).collect();
                                 data.queue_message(
                                     player.thread_id,
-                                    ServerMessage::StatusUpdate{players: players_with_hidden_memberships}
+                                    ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id)}
                                 );
                             }
                         },
@@ -67,13 +67,13 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             }).collect();
                             data.queue_message(
                                 player.thread_id,
-                                ServerMessage::StatusUpdate{players: players_with_hidden_memberships}
+                                ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id)}
                             );
                         },
                         None => {
                             data.queue_message(
                                 player.thread_id,
-                                ServerMessage::StatusUpdate{players: current_players.clone()}
+                                ServerMessage::StatusUpdate{players: current_players.clone(), state: state, player_id: Some(player.player_id)}
                             );
                         },
                     }
@@ -92,20 +92,18 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         data.shared.player_number = Some(online_count as u8);
                         
                         // TODO create helper function for this
-                        for player in data.shared.players.clone() {
-                            data.queue_message(
-                                player.thread_id,
-                                ServerMessage::Advance,
-                            );
-                        }
+                        // for player in data.shared.players.clone() {
+                        //     data.queue_message(
+                        //         player.thread_id,
+                        //         ServerMessage::,
+                        //     );
+                        // }
                         data.state = ServerState::IdentityAssignment{identities_assigned: false};
                         data.shared.players = data.shared.players.iter_mut().
                             map(|player| {player.ready = false; player.clone()}).collect();
                     }
                 },
                 ServerState::IdentityAssignment {identities_assigned } => {
-                    // TODO assign identities randomly
-                    // TODO enable rejoin after the game started
                     if identities_assigned == false {
                         let mut number_fascists = 0;
     
@@ -195,13 +193,15 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         data.shared.players = data.shared.players.iter_mut().
                         map(|player| {player.ready = false; player.clone()}).collect();
 
-                        for player in data.shared.players.clone() {
-                            data.queue_message(
-                                player.thread_id,
-                                ServerMessage::AdvanceNomination{presidential_nominee: first_nominee.clone()},
-                            );
-                        }
-                        println!("sent advance to nomination!");
+                        // for player in data.shared.players.clone() {
+                        //     data.queue_message(
+                        //         player.thread_id,
+                        //         ServerMessage::AdvanceNomination{presidential_nominee: first_nominee.clone()},
+                        //     );
+                        // }
+                        
+
+                        // println!("sent advance to nomination!");
                     }
 
                 },

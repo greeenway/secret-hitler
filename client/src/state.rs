@@ -47,7 +47,6 @@ impl ActionHandler for HandlerWrapper {
         }
     }
 
-    // TODO also guard handle events like draw handler
     fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent) {
         match (self, shared.in_sync) {
             (HandlerWrapper::LoginScreen(inner_handler), _) => inner_handler.handle_event(shared, event),
@@ -141,13 +140,11 @@ impl State {
                 
                 // self.shared.user_name = Some(user_name);
             },
+            // old transitions ---> start
             (HandlerWrapper::LoginScreen(_), ServerMessage::Connected{user_name}) => {
                 self.handler = HandlerWrapper::PreGame(pre_game::PreGameHandler::new(user_name));
                 // self.shared.user_name = Some(user_name);
             },
-            // (HandlerWrapper::PreGame(_), ServerMessage::StatusUpdate{players}) => {
-            //     self.shared.players = players;
-            // },
             (HandlerWrapper::PreGame(pre_game::PreGameHandler{ready:_, player_id}), ServerMessage::Advance) => {
                 self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id));
             },
@@ -155,6 +152,9 @@ impl State {
                 ServerMessage::AdvanceNomination{presidential_nominee}) => {
                 self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(player_id, presidential_nominee));
             },
+            // end ---> old transitions
+
+            // TODO clean up this file
             // (HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler{player_id, ready: _}), ServerMessage::Advance) => {
             //     self.handler = HandlerWrapper::Election(election::ElectionHandler::new(player_id, 0, None, None));
             // },
@@ -165,9 +165,34 @@ impl State {
             // (HandlerWrapper::IdentityAssignment(_), ServerMessage::StatusUpdate{players}) => {
             //     self.shared.players = players;
             // },
-            (_, ServerMessage::StatusUpdate{players}) => {
+            // idea: match server_state and current client state
+            // if they are the same, stay in state, else move to next state as indicated by server
+            // we potentially need to adjust the client states a bit to be robust against this frequent "resetting"
+            (_, ServerMessage::StatusUpdate{players, state: server_state, player_id}) => {
                 self.shared.players = players;
                 self.shared.in_sync = true;
+
+                match (self.handler.clone(), server_state) {
+                    // identity mappings
+                    (HandlerWrapper::LoginScreen(_), _) => {}, // we need an explicit reconnect message to move to another state
+                    (HandlerWrapper::PreGame(_), ServerState::Pregame) => {},
+                    (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
+                    (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancelor, presidential_nominee}) => {},
+
+                    // actual state changes, not restricted, we trust that the server knows what it does
+                    (_, ServerState::Pregame) => {
+                        self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
+                    },
+                    (_, ServerState::IdentityAssignment{identities_assigned: _}) => {
+                        self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
+                        // todo use identities assigned or not?
+                    },
+                    (_, ServerState::Nomination{last_president: _, last_chancelor: _, presidential_nominee}) => {
+                        self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(player_id.unwrap(), presidential_nominee));
+                    },
+                    // todo other state changes
+                    (_, _) => {} // we want to switch states later
+                }
             },
 
             (state, message) => {

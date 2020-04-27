@@ -24,7 +24,8 @@ impl IdentityAssignmentHandler {
     }
 }
 
-// FIXME can get stuck at awaiting identity...??
+// FIXME can get stuck at awaiting identity...?? maybe connected with rejoin
+// FIXME if player disconnects state can move because "all players are ready"
 
 impl state::ActionHandler for IdentityAssignmentHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {

@@ -74,7 +74,7 @@ pub enum ServerMessage {
     Kicked {reason: String},             // player gets kicked from the server
     Reconnected {user_name: String, state: ServerState},     // player reconnects to old session
     Rejected {reason: String},           //
-    StatusUpdate {players: Vec<Player>}, // regular update of selected game state
+    StatusUpdate {players: Vec<Player>, state: ServerState, player_id: Option<String>}, // regular update of selected game state
     Advance,                             // server pushes users to next state
     AdvanceNomination {presidential_nominee: String},
     Chat {user_name: String, message: String}

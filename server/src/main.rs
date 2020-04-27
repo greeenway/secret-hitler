@@ -7,6 +7,7 @@ use std::env;
 mod state;
 mod communicate;
 mod state_logic;
+mod seeds;
 
 
 fn main() -> std::io::Result<()> {
@@ -17,9 +18,18 @@ fn main() -> std::io::Result<()> {
 
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
 
-    let data = Arc::new(Mutex::new(
-        state::GameState::new(config.clone())
-    ));
+    // clean start
+    let game_state = state::GameState::new(config.clone());
+
+    // seed game state
+    // let game_state = seeds::seed_game_state(config.clone());
+    
+    
+    
+
+
+    let data = Arc::new(Mutex::new(game_state));
+    
 
     let state_data = Arc::clone(&data);
 

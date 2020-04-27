@@ -12,7 +12,6 @@ pub struct SharedState {
     pub outboxes: HashMap<usize, VecDeque<ServerMessage>>,
     pub fascist_known_by_hitler: Option<bool>,
     pub player_number: Option<u8>,
-    pub identities_assigned: bool,
 }
 
 impl SharedState {
@@ -22,7 +21,6 @@ impl SharedState {
             outboxes: HashMap::new(),
             fascist_known_by_hitler: None,
             player_number: None,
-            identities_assigned: false, // TODO: only needed in one state, find other solution
         }
     }
 }
@@ -35,6 +33,8 @@ pub struct GameState {
     pub state: ServerState,
     pub shared: SharedState,
 }
+
+
 
 impl GameState {
     pub fn new(config: common::Configuration) -> GameState {
@@ -68,14 +68,15 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
         common::ClientMessage::Connect{name} => {
             if !state.shared.outboxes.contains_key(&id) {
                 state.shared.outboxes.insert(id, VecDeque::new());
-            } else {
-                // forbid user to change player name
-                if let Some(player) = state.shared.players.iter().find(|player| player.thread_id == id) {
-                    let reason = format!("Already connected as {}", player.player_id);
-                    state.queue_message(id, ServerMessage::Rejected{reason: reason});
-                    return;
-                }
-            }
+            } 
+            // else {
+            //     // forbid user to change player name
+            //     if let Some(player) = state.shared.players.iter().find(|player| player.thread_id == id) {
+            //         let reason = format!("Already connected as {}", player.player_id);
+            //         state.queue_message(id, ServerMessage::Rejected{reason: reason});
+            //         return;
+            //     }
+            // }
 
             if let Some(player) = state.shared.players.iter_mut().find(|player| player.player_id == name) {
                 if player.connection_status == ConnectionStatus::Disconnected {
