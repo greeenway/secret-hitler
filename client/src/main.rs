@@ -25,7 +25,7 @@ enum Show {
 
 mod state;
 use state::State;
-use common::ServerMessage;
+// use common::ServerMessage;
 
 mod render; // common render stuff
 mod login_screen;
@@ -66,14 +66,6 @@ fn execute_command(command: String, mut data: std::sync::MutexGuard<'_, State>) 
             data.shared.outbox.push_back(common::ClientMessage::Chat {
                 message: String::from(message),
             });
-        }
-        ["simulate", message] => {
-
-            match message {
-                "reconnect" => data.advance_handler(ServerMessage::Reconnected{user_name: String::from("dummy")}),
-                _ => data.shared.output.push_front(format!("unknown command '{}'", command)),
-            }
-            
         },
         ["clear"] => data.shared.output.clear(),
         _ => {

@@ -24,11 +24,13 @@ impl IdentityAssignmentHandler {
     }
 }
 
+// FIXME can get stuck at awaiting identity...??
+
 impl state::ActionHandler for IdentityAssignmentHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
-
-        // TODO should we catch this here or does this always work?
-        let my_player = shared.players.iter().find(|player| player.player_id == self.player_id).unwrap(); 
+        
+        // TODO should we catch this here or does this always work? -> now probably
+        let my_player = shared.players.iter().find(|player| player.player_id == self.player_id).unwrap();  
         let mut assignment_ready = false;
 
         let mut party_membership_string = style("none");
@@ -61,7 +63,12 @@ impl state::ActionHandler for IdentityAssignmentHandler {
             stdout(),
             cursor::MoveTo(0,7),
             Print("** Identity Assignment **"),
+            cursor::MoveTo(0,9),
         );
+
+
+
+
 
         
 

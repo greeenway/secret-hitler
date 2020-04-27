@@ -7,8 +7,7 @@ use std::time;
 use rand::prelude::*;
 
 extern crate common;
-use crate::state::State;
-use common::{ServerMessage, ConnectionStatus};
+use common::{ServerMessage, ConnectionStatus, ServerState};
 
 pub fn all_players_ready(players: Vec<common::Player>) -> bool {
     let ready_count = players.iter().filter(|player| player.ready == true).count();
@@ -85,7 +84,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
             }
 
             match data.state {
-                State::Pregame => {
+                ServerState::Pregame => {
                     let online_count = data.shared.players.iter().
                         filter(|player| player.connection_status == ConnectionStatus::Connected).count();
                     if all_players_ready(data.shared.players.clone()) && online_count >= 1 {// minimum players should be changed to 5
@@ -99,12 +98,12 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 ServerMessage::Advance,
                             );
                         }
-                        data.state = State::IdentityAssignment{identities_assigned: false};
+                        data.state = ServerState::IdentityAssignment{identities_assigned: false};
                         data.shared.players = data.shared.players.iter_mut().
                             map(|player| {player.ready = false; player.clone()}).collect();
                     }
                 },
-                State::IdentityAssignment {identities_assigned } => {
+                ServerState::IdentityAssignment {identities_assigned } => {
                     // TODO assign identities randomly
                     // TODO enable rejoin after the game started
                     if identities_assigned == false {
@@ -175,7 +174,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             }
                         }
                         
-                        data.state = State::IdentityAssignment {identities_assigned: true };
+                        data.state = ServerState::IdentityAssignment {identities_assigned: true };
 
 
                     }
@@ -190,7 +189,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         nums.shuffle(&mut rng);
                         let first_nominee = data.shared.players[nums[0] as usize].player_id.clone(); // TODO pick random player more efficiently
 
-                        data.state = State::Nomination{last_president: None, last_chancelor: None, presidential_nominee: first_nominee.clone()};
+                        data.state = ServerState::Nomination{last_president: None, last_chancelor: None, presidential_nominee: first_nominee.clone()};
                         
                         // TODO create function to set all players to not ready
                         data.shared.players = data.shared.players.iter_mut().
@@ -206,7 +205,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
 
                 },
-                State::Election {fail_count: _, presidential_nominee: _, chancelor_nominee: _} => {
+                ServerState::Election {fail_count: _, presidential_nominee: _, chancelor_nominee: _} => {
                     println!("election state!!!");
                 }
                 _ => {}

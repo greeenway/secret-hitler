@@ -56,6 +56,15 @@ impl Player {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ServerState {
+    Pregame,
+    IdentityAssignment {identities_assigned: bool},
+    Nomination {last_president: Option<String>, last_chancelor: Option<String>, presidential_nominee: String},
+    Election {fail_count: u8, presidential_nominee: String, chancelor_nominee: String},
+    GameOver,
+}
+
 
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -63,7 +72,7 @@ pub enum ServerMessage {
     Connected { user_name: String },
     Quit {user_name: String},
     Kicked {reason: String},             // player gets kicked from the server
-    Reconnected {user_name: String},     // player reconnects to old session
+    Reconnected {user_name: String, state: ServerState},     // player reconnects to old session
     Rejected {reason: String},           //
     StatusUpdate {players: Vec<Player>}, // regular update of selected game state
     Advance,                             // server pushes users to next state

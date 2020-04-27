@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use common::ServerMessage;
 use common::ConnectionStatus;
 use common::Player;
-
+use common::ServerState;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SharedState {
@@ -27,26 +27,19 @@ impl SharedState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum State {
-    Pregame,
-    IdentityAssignment {identities_assigned: bool},
-    Nomination {last_president: Option<String>, last_chancelor: Option<String>, presidential_nominee: String},
-    Election {fail_count: u8, presidential_nominee: String, chancelor_nominee: String},
-    GameOver,
-}
+
 
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GameState {
-    pub state: State,
+    pub state: ServerState,
     pub shared: SharedState,
 }
 
 impl GameState {
     pub fn new(config: common::Configuration) -> GameState {
         GameState {
-            state: State::Pregame,
+            state: ServerState::Pregame,
             shared: SharedState::new(config),
         }
     }
@@ -89,7 +82,7 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                     // reconnect
                     player.connection_status = ConnectionStatus::Connected;
                     player.thread_id = id;
-                    state.queue_message(id, ServerMessage::Reconnected{user_name: name});
+                    state.queue_message(id, ServerMessage::Reconnected{user_name: name, state: state.state.clone()});
                 } else {
                     // user already present and connected
                     state.queue_message(id, ServerMessage::Kicked{reason: String::from("user already logged in")});
