@@ -103,9 +103,11 @@ impl state::ActionHandler for NominationHandler {
                 code: KeyCode::Enter,
                 modifiers: _,
             } => {
-                if let Some(_) = self.selected_index {
+                if let Some(s) = self.selected_index {
                     self.voted = true;
-                    // TODO send a message to the server to tell which player was nominated, server should move to election
+                    let chancelor_nominee = shared.players[s].player_id.clone();
+                    shared.outbox.push_back(common::ClientMessage::Nominated{chancelor_nominee: chancelor_nominee});
+                    // TODO can we get stuck if this vote message gets lost? / reconnect?
                 }
                 
                 // shared.outbox.push_back(common::ClientMessage::Ready{ready: self.ready});

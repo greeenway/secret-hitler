@@ -206,7 +206,6 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
                 },
                 ServerState::Election {fail_count: _, presidential_nominee: _, chancelor_nominee: _} => {
-                    println!("election state!!!");
                 }
                 _ => {}
             }

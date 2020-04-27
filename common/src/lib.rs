@@ -19,6 +19,7 @@ pub enum ClientMessage {
     StillAlive,
     Ready {ready: bool},
     Quit,
+    Nominated {chancelor_nominee: String},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -77,7 +78,7 @@ pub enum ServerMessage {
     StatusUpdate {players: Vec<Player>, state: ServerState, player_id: Option<String>}, // regular update of selected game state
     Advance,                             // server pushes users to next state
     AdvanceNomination {presidential_nominee: String},
-    Chat {user_name: String, message: String}
+    Chat {user_name: String, message: String},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

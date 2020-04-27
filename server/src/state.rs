@@ -99,6 +99,15 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                 player.ready = ready;
             }
         },
+        common::ClientMessage::Nominated{chancelor_nominee} => {
+            match state.state.clone() {
+                ServerState::Nomination{last_president, last_chancelor, presidential_nominee} => {
+                    state.state = ServerState::Election{fail_count: 0, presidential_nominee, chancelor_nominee}
+                },
+                _ => {}
+            }
+            
+        }
         common::ClientMessage::Hello => {
             println!("user thread {} says hello.", id);
         },

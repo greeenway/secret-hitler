@@ -132,7 +132,14 @@ impl State {
                     ServerState::Nomination {last_president: _, last_chancelor: _, presidential_nominee} => {
                         self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(user_name, presidential_nominee));
                     },
-                    // ServerState::Election {fail_count: _, presidential_nominee, chancelor_nominee} => {},
+                    ServerState::Election {fail_count, presidential_nominee, chancelor_nominee} => {
+                        self.handler = HandlerWrapper::Election(election::ElectionHandler::new(
+                            user_name,
+                            fail_count,
+                            Some(presidential_nominee),
+                            Some(chancelor_nominee),
+                        ))
+                    },
                     ServerState::GameOver => {},
                     _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
                 }
@@ -189,6 +196,14 @@ impl State {
                     },
                     (_, ServerState::Nomination{last_president: _, last_chancelor: _, presidential_nominee}) => {
                         self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(player_id.unwrap(), presidential_nominee));
+                    },
+                    (_, ServerState::Election{fail_count, chancelor_nominee, presidential_nominee}) => {
+                        self.handler = HandlerWrapper::Election(election::ElectionHandler::new(
+                            player_id.unwrap(),
+                            fail_count,
+                            Some(presidential_nominee), 
+                            Some(chancelor_nominee)
+                        ));
                     },
                     // todo other state changes
                     (_, _) => {} // we want to switch states later

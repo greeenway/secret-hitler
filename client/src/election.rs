@@ -45,6 +45,19 @@ impl state::ActionHandler for ElectionHandler {
             cursor::MoveTo(0,7),
             Print("** Election **"),
 
+            cursor::MoveTo(1,9),
+            Print("Nominees:"),
+            cursor::MoveTo(1,10),
+            Print(format!("President: {}", self.last_president.clone().unwrap() )),
+            cursor::MoveTo(1,11),
+            Print(format!("Chancelor: {}", self.last_chancelor.clone().unwrap() )),
+            cursor::MoveTo(38,9),
+            Print("Vote..."),
+            cursor::MoveTo(37,11),
+            Print("Ja!"),
+            cursor::MoveTo(45,11),
+            Print("Nein!"),
+            
         );
 
         crate::render::display_player_names(&shared);
