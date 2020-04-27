@@ -99,10 +99,10 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                 player.ready = ready;
             }
         },
-        common::ClientMessage::Nominated{chancelor_nominee} => {
+        common::ClientMessage::Nominated{chancellor_nominee} => {
             match state.state.clone() {
-                ServerState::Nomination{last_president, last_chancelor, presidential_nominee} => {
-                    state.state = ServerState::Election{fail_count: 0, presidential_nominee, chancelor_nominee}
+                ServerState::Nomination{last_president, last_chancellor, presidential_nominee} => {
+                    state.state = ServerState::Election{fail_count: 0, presidential_nominee, chancellor_nominee}
                 },
                 _ => {}
             }

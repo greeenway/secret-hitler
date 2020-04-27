@@ -19,7 +19,7 @@ pub enum ClientMessage {
     StillAlive,
     Ready {ready: bool},
     Quit,
-    Nominated {chancelor_nominee: String},
+    Nominated {chancellor_nominee: String},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -61,8 +61,8 @@ impl Player {
 pub enum ServerState {
     Pregame,
     IdentityAssignment {identities_assigned: bool},
-    Nomination {last_president: Option<String>, last_chancelor: Option<String>, presidential_nominee: String},
-    Election {fail_count: u8, presidential_nominee: String, chancelor_nominee: String},
+    Nomination {last_president: Option<String>, last_chancellor: Option<String>, presidential_nominee: String},
+    Election {fail_count: u8, presidential_nominee: String, chancellor_nominee: String},
     GameOver,
 }
 

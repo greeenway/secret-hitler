@@ -187,7 +187,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         nums.shuffle(&mut rng);
                         let first_nominee = data.shared.players[nums[0] as usize].player_id.clone(); // TODO pick random player more efficiently
 
-                        data.state = ServerState::Nomination{last_president: None, last_chancelor: None, presidential_nominee: first_nominee.clone()};
+                        data.state = ServerState::Nomination{last_president: None, last_chancellor: None, presidential_nominee: first_nominee.clone()};
                         
                         // TODO create function to set all players to not ready
                         data.shared.players = data.shared.players.iter_mut().
@@ -205,7 +205,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
 
                 },
-                ServerState::Election {fail_count: _, presidential_nominee: _, chancelor_nominee: _} => {
+                ServerState::Election {fail_count: _, presidential_nominee: _, chancellor_nominee: _} => {
                 }
                 _ => {}
             }

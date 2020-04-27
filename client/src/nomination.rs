@@ -56,7 +56,7 @@ impl state::ActionHandler for NominationHandler {
         if self.is_president {
             let _res = queue!(
                 stdout(),
-                Print(format!("{}, you are presidential nominee, please select your chancelor: ", self.player_id)),
+                Print(format!("{}, you are presidential nominee, please select your chancellor: ", self.player_id)),
             );
             if let Some(selected_index) = self.selected_index {
                 let mut draw_index = 0;
@@ -86,7 +86,7 @@ impl state::ActionHandler for NominationHandler {
         } else {
             let _res = queue!(
                 stdout(),
-                Print(format!("Please wait while {} is nominating a chancelor candidate...", self.presidential_nominee)),
+                Print(format!("Please wait while {} is nominating a chancellor candidate...", self.presidential_nominee)),
             );
         }
 
@@ -105,8 +105,8 @@ impl state::ActionHandler for NominationHandler {
             } => {
                 if let Some(s) = self.selected_index {
                     self.voted = true;
-                    let chancelor_nominee = shared.players[s].player_id.clone();
-                    shared.outbox.push_back(common::ClientMessage::Nominated{chancelor_nominee: chancelor_nominee});
+                    let chancellor_nominee = shared.players[s].player_id.clone();
+                    shared.outbox.push_back(common::ClientMessage::Nominated{chancellor_nominee: chancellor_nominee});
                     // TODO can we get stuck if this vote message gets lost? / reconnect?
                 }
                 

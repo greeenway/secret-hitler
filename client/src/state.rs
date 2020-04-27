@@ -129,15 +129,15 @@ impl State {
                     ServerState::IdentityAssignment {identities_assigned: _} => {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(user_name));
                     },
-                    ServerState::Nomination {last_president: _, last_chancelor: _, presidential_nominee} => {
+                    ServerState::Nomination {last_president: _, last_chancellor: _, presidential_nominee} => {
                         self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(user_name, presidential_nominee));
                     },
-                    ServerState::Election {fail_count, presidential_nominee, chancelor_nominee} => {
+                    ServerState::Election {fail_count, presidential_nominee, chancellor_nominee} => {
                         self.handler = HandlerWrapper::Election(election::ElectionHandler::new(
                             user_name,
                             fail_count,
                             Some(presidential_nominee),
-                            Some(chancelor_nominee),
+                            Some(chancellor_nominee),
                         ))
                     },
                     ServerState::GameOver => {},
@@ -184,7 +184,7 @@ impl State {
                     (HandlerWrapper::LoginScreen(_), _) => {}, // we need an explicit reconnect message to move to another state
                     (HandlerWrapper::PreGame(_), ServerState::Pregame) => {},
                     (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
-                    (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancelor, presidential_nominee}) => {},
+                    (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
 
                     // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
@@ -194,15 +194,15 @@ impl State {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
                         // todo use identities assigned or not?
                     },
-                    (_, ServerState::Nomination{last_president: _, last_chancelor: _, presidential_nominee}) => {
+                    (_, ServerState::Nomination{last_president: _, last_chancellor: _, presidential_nominee}) => {
                         self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(player_id.unwrap(), presidential_nominee));
                     },
-                    (_, ServerState::Election{fail_count, chancelor_nominee, presidential_nominee}) => {
+                    (_, ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {
                         self.handler = HandlerWrapper::Election(election::ElectionHandler::new(
                             player_id.unwrap(),
                             fail_count,
                             Some(presidential_nominee), 
-                            Some(chancelor_nominee)
+                            Some(chancellor_nominee)
                         ));
                     },
                     // todo other state changes

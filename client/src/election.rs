@@ -19,18 +19,18 @@ pub struct ElectionHandler {
     player_id: String,
     fail_count: u8,
     last_president: Option<String>,
-    last_chancelor: Option<String>,
+    last_chancellor: Option<String>,
     selected_vote: VoteState,
 }
 
 
 impl ElectionHandler {
-    pub fn new(player_id: String, fail_count: u8, last_president: Option<String>, last_chancelor: Option<String>) -> ElectionHandler {
+    pub fn new(player_id: String, fail_count: u8, last_president: Option<String>, last_chancellor: Option<String>) -> ElectionHandler {
         Self {
             player_id,
             fail_count,
             last_president,
-            last_chancelor,
+            last_chancellor,
             selected_vote: VoteState::Ja,
         }
     }
@@ -50,7 +50,7 @@ impl state::ActionHandler for ElectionHandler {
             cursor::MoveTo(1,10),
             Print(format!("President: {}", self.last_president.clone().unwrap() )),
             cursor::MoveTo(1,11),
-            Print(format!("Chancelor: {}", self.last_chancelor.clone().unwrap() )),
+            Print(format!("chancellor: {}", self.last_chancellor.clone().unwrap() )),
             cursor::MoveTo(38,9),
             Print("Vote..."),
             cursor::MoveTo(37,11),
@@ -65,7 +65,7 @@ impl state::ActionHandler for ElectionHandler {
 
     fn handle_event(&mut self, _: &mut state::SharedState, event: event::KeyEvent) {
         // first we need a president
-        // then president needs to pick a chancelor
+        // then president needs to pick a chancellor
         // then players need to vote
         
         match event {
