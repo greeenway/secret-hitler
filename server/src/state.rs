@@ -5,6 +5,7 @@ use common::ServerMessage;
 use common::ConnectionStatus;
 use common::Player;
 use common::ServerState;
+use common::VoteState;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SharedState {
@@ -12,6 +13,7 @@ pub struct SharedState {
     pub outboxes: HashMap<usize, VecDeque<ServerMessage>>,
     pub fascist_known_by_hitler: Option<bool>,
     pub player_number: Option<u8>,
+    pub votes: Option<HashMap<String, VoteState>>,
 }
 
 impl SharedState {
@@ -21,6 +23,7 @@ impl SharedState {
             outboxes: HashMap::new(),
             fascist_known_by_hitler: None,
             player_number: None,
+            votes: None,
         }
     }
 }
@@ -131,6 +134,17 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                         },
                     );
                 }
+            }
+        }
+        common::ClientMessage::Vote { selected, player_id} => {
+            // TODO check valid state here (meaning election)
+            if state.shared.votes == None {
+                state.shared.votes = Some(HashMap::new());
+            }
+            if state.shared.votes != None { // this should always be true...
+                let mut votes = state.shared.votes.clone().unwrap();
+                votes.insert( player_id, selected); // TODO: find a better way, than creating the hashmap again...
+                state.shared.votes = Some(votes);
             }
         }
         common::ClientMessage::StillAlive => {

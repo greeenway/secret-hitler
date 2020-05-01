@@ -141,7 +141,7 @@ impl State {
                         ))
                     },
                     ServerState::GameOver => {},
-                    _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
+                    // _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
                 }
                 self.shared.in_sync = false;
                 
@@ -185,8 +185,9 @@ impl State {
                     (HandlerWrapper::PreGame(_), ServerState::Pregame) => {},
                     (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
                     (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
-
-                    // actual state changes, not restricted, we trust that the server knows what it does
+                    (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {}
+                    
+                        // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
                     },

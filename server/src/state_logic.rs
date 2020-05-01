@@ -27,12 +27,27 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
 
 
-            let current_players = data.shared.players.clone();
+            let mut current_players = data.shared.players.clone();
+
+            // map votes to players values if present
+            if data.shared.votes != None {
+                current_players = current_players.iter_mut().
+                map(|player| {
+                    // if player.player_id
+                    match data.shared.votes.clone().unwrap().get(&player.player_id) {
+                        Some(vote) => {player.vote = Some(vote.clone()); player.clone()},
+                        None => {player.vote = None; player.clone()},
+                    }
+                }).collect();
+            }
+            
 
 
             for player in data.shared.players.clone() {
                 if player.connection_status == ConnectionStatus::Connected {
                     let state = data.state.clone();
+
+
                     match player.party_membership {
                         Some(common::PartyMembership::Fascist) => {
                             // if data.shared.fascist_known_by_hitler

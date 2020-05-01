@@ -16,6 +16,8 @@ fn main() -> std::io::Result<()> {
         panic!("usage: cmd [configfile.yaml]");
     }
 
+    // TODO remove cursor over in all render functions...
+    
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
 
     // clean start

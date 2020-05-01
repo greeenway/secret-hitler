@@ -5,12 +5,18 @@ use serde::{Serialize, Deserialize};
 // use serde_json;
 
 // pub mod another;
-pub mod another;
+// pub mod another;
 
-pub fn say() -> another::Hello {
-    another::Hello{x:2}
+// pub fn say() -> another::Hello {
+//     another::Hello{x:2}
+// }
+
+
+#[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
+pub enum VoteState {
+    Ja,
+    Nein,
 }
-
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum ClientMessage {
     Hello,
@@ -20,6 +26,7 @@ pub enum ClientMessage {
     Ready {ready: bool},
     Quit,
     Nominated {chancellor_nominee: String},
+    Vote { selected: VoteState , player_id: String},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -42,6 +49,7 @@ pub struct Player {
     pub ready: bool,
     pub party_membership: Option<PartyMembership>,
     pub is_hitler: Option<bool>,
+    pub vote: Option<VoteState>,
 }
 
 impl Player {
@@ -53,6 +61,7 @@ impl Player {
             ready: false,
             party_membership: None,
             is_hitler: None,
+            vote: None,
         }
     }
 }
