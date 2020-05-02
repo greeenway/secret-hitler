@@ -11,7 +11,8 @@ use std::sync::{Arc, Mutex};
 
 use crossterm::{queue, Result, 
     terminal::{SetSize, size, enable_raw_mode, disable_raw_mode, Clear, ClearType},
-    cursor::MoveTo,
+    cursor::{MoveTo},
+    cursor,
 };
 use crossterm::style::{Print};
 use crossterm::event::{Event, KeyEvent, KeyCode};//, KeyModifiers};
@@ -135,7 +136,7 @@ fn main() -> Result<()> {
                 if data.shared.done {
                     break;
                 }
-                let _res = queue!(stdout(), Clear(ClearType::All));
+                let _res = queue!(stdout(), Clear(ClearType::All), cursor::Hide);
 
                 data.draw();
 
@@ -288,6 +289,7 @@ fn main() -> Result<()> {
         stdout(),
         Print("hallo"),
         Clear(ClearType::All),
+        cursor::Show,
     )?;
 
 
