@@ -98,7 +98,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                 }
             }
 
-            match data.state {
+            match data.state.clone() {
                 ServerState::Pregame => {
                     let online_count = data.shared.players.iter().
                         filter(|player| player.connection_status == ConnectionStatus::Connected).count();
@@ -220,7 +220,47 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
 
                 },
-                ServerState::Election {fail_count: _, presidential_nominee: _, chancellor_nominee: _} => {
+                ServerState::Election {fail_count: _, presidential_nominee, chancellor_nominee} => {
+                    // TODO wait for ready of all players before moving to next state
+                    let number_of_players = data.shared.player_number.unwrap() as usize;
+
+                    if let Some(votes) = data.shared.votes.clone() {
+                        let voted_count = votes.len();
+                        let vote_complete = voted_count == number_of_players;
+
+                        if vote_complete {
+                            let ja_votes = votes.values()
+                            .filter(|&vote| vote == &common::VoteState::Ja).count();
+                            println!("{}/{}", ja_votes, votes.len());
+
+                            if ja_votes > (number_of_players - ja_votes) {
+                                // vote succeeded
+                                println!("vote passed!");
+                                data.shared.votes = None;
+                            } else {
+                                // vote failed
+                                // TODO check for chaos -> transition to chaos if fail count is high enough
+
+                                let president_index = data.shared.players.iter().position(|p| p.player_id == presidential_nominee).unwrap();
+                                let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
+
+                                data.state = ServerState::Nomination{
+                                    last_president: Some(presidential_nominee), 
+                                    last_chancellor: Some(chancellor_nominee), 
+                                    presidential_nominee: data.shared.players[next_president_index].player_id.clone()};
+                                println!("vote failed!");
+                                
+                                data.shared.votes = None;
+
+                            }
+                        }
+                    }
+
+
+                    
+
+
+
                 }
                 _ => {}
             }

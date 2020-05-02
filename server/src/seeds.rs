@@ -15,7 +15,7 @@ pub fn seed_game_state(config: Configuration, state: &str) -> GameState {
             let mut p1 = Player::new(String::from("lukas"), 0);
             p1.connection_status = ConnectionStatus::Disconnected;
             p1.is_hitler = Some(false);
-            p1.party_membership = Some(PartyMembership::Fascist);
+            p1.party_membership = Some(PartyMembership::Liberal);
             p1.ready = false;
         
             let mut p2 = Player::new(String::from("val"), 1);
@@ -26,7 +26,7 @@ pub fn seed_game_state(config: Configuration, state: &str) -> GameState {
         
             let mut p3 = Player::new(String::from("markus"), 2);
             p3.connection_status = ConnectionStatus::Disconnected;
-            p3.is_hitler = Some(false);
+            p3.is_hitler = Some(true);
             p3.party_membership = Some(PartyMembership::Fascist);
             p3.ready = false;
         
@@ -53,7 +53,7 @@ pub fn seed_game_state(config: Configuration, state: &str) -> GameState {
             let mut p1 = Player::new(String::from("lukas"), 0);
             p1.connection_status = ConnectionStatus::Disconnected;
             p1.is_hitler = Some(false);
-            p1.party_membership = Some(PartyMembership::Fascist);
+            p1.party_membership = Some(PartyMembership::Liberal);
             p1.ready = false;
         
             let mut p2 = Player::new(String::from("val"), 1);
@@ -64,7 +64,7 @@ pub fn seed_game_state(config: Configuration, state: &str) -> GameState {
         
             let mut p3 = Player::new(String::from("markus"), 2);
             p3.connection_status = ConnectionStatus::Disconnected;
-            p3.is_hitler = Some(false);
+            p3.is_hitler = Some(true);
             p3.party_membership = Some(PartyMembership::Fascist);
             p3.ready = false;
         
