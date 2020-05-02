@@ -8,7 +8,7 @@ use crossterm::event::{KeyEvent, KeyCode};
 use crate::state;
 use common::VoteState;
 
-
+//press space to go to next phase
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct ElectionHandler {
@@ -67,41 +67,56 @@ impl state::ActionHandler for ElectionHandler {
             
         );
 
+        let number_of_votes = shared.players.iter().filter(|player| player.vote != None).count();
+        let number_of_players = shared.players.len();
+
         let mut i_ja = 5;
         let mut i_nein = 5;
+        let min_width = match number_of_players {
+            10 => 2,
+            _ => 1
+        };
+        let vote_complete = number_of_votes == number_of_players;
 
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(35,2 as u16),
-            Print(format!("---------- votes ----------")),
-            cursor::MoveTo(35,3 as u16),
-            Print(format!("Ja!")),
-            cursor::MoveTo(52,3 as u16),
-            Print(format!("Nein!")),
+            cursor::MoveTo(40,2 as u16),
+            Print(format!("Votes ({:width$}/{:width$})", number_of_votes, number_of_players, width = min_width)),
         );
 
-        for player in shared.players.clone() {
-            match player.vote {
-                Some(VoteState::Ja) => {
-                    let _res = queue!(
-                        stdout(),
-                        cursor::MoveTo(35,i_ja as u16),
-                        Print(format!("{}", player.player_id)),
-                    );
-                    i_ja += 1;
-                },
-                Some(VoteState::Nein) => {
-                    let _res = queue!(
-                        stdout(),
-                        cursor::MoveTo(52,i_nein as u16),
-                        Print(format!("{}", player.player_id)),
-                    );
-                    i_nein += 1;
-                },
-                None => {},
+        if vote_complete {
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(35,3 as u16),
+                Print(format!("Ja!")),
+                cursor::MoveTo(52,3 as u16),
+                Print(format!("Nein!")),
+            );
+    
+            for player in shared.players.clone() {
+                match player.vote {
+                    Some(VoteState::Ja) => {
+                        let _res = queue!(
+                            stdout(),
+                            cursor::MoveTo(35,i_ja as u16),
+                            Print(format!("{}", player.player_id)),
+                        );
+                        i_ja += 1;
+                    },
+                    Some(VoteState::Nein) => {
+                        let _res = queue!(
+                            stdout(),
+                            cursor::MoveTo(52,i_nein as u16),
+                            Print(format!("{}", player.player_id)),
+                        );
+                        i_nein += 1;
+                    },
+                    None => {},
+                }
+                
             }
-            
         }
+
         
 
         crate::render::display_player_names(&shared);
