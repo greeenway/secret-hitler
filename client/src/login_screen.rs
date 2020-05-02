@@ -23,11 +23,16 @@ impl state::ActionHandler for LoginScreenHandler {
     fn draw(&mut self, _: &mut state::SharedState) {
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(0,7),
-            Print("** LoginScreen **"),
-            cursor::MoveTo(1,8),
-            Print(format!("user: {}", self.input)),
+            
 
+            cursor::MoveTo(6,4), Print(" _____                    _     _   _ _ _   _        "),
+            cursor::MoveTo(6,5), Print("/  ___|                  | |   | | | (_| | | |       "),   
+            cursor::MoveTo(6,6), Print("\\ `--.  ___  ___ _ __ ___| |_  | |_| |_| |_| | ___ _ __ "),
+            cursor::MoveTo(6,7), Print(" `--. \\/ _ \\/ __| '__/ _ | __| |  _  | | __| |/ _ | '__|"),
+            cursor::MoveTo(6,8), Print("/\\__/ |  __| (__| | |  __| |_  | | | | | |_| |  __| |   "),
+            cursor::MoveTo(6,9), Print("\\____/ \\___|\\___|_|  \\___|\\__| \\_| |_|_|\\__|_|\\___|_|  "),
+            cursor::MoveTo(23,14),
+            Print(format!("user name: {}", self.input)),
         );
     }
 

@@ -4,7 +4,6 @@ use crossterm::style::{Print};
 use crossterm::event::{KeyEvent, KeyCode}; //, KeyCode};
 use crossterm::style::{style, Color, Attribute};
 
-
 use crate::state;
 use common::PartyMembership;
 
@@ -29,7 +28,7 @@ impl IdentityAssignmentHandler {
 
 impl state::ActionHandler for IdentityAssignmentHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
-        
+        let left_margin = 25;
         // TODO should we catch this here or does this always work? -> now probably
         let my_player = shared.players.iter().find(|player| player.player_id == self.player_id).unwrap();  
         let mut assignment_ready = false;
@@ -59,15 +58,11 @@ impl state::ActionHandler for IdentityAssignmentHandler {
 
 
 
-
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(0,7),
-            Print("** Identity Assignment **"),
-            cursor::MoveTo(0,9),
+            cursor::MoveTo(left_margin,1),
+            Print(style("Identity Assignment").attribute(Attribute::Bold)),
         );
-
-
 
 
 
@@ -77,11 +72,12 @@ impl state::ActionHandler for IdentityAssignmentHandler {
         if assignment_ready {
             let _res = queue!(
                 stdout(),
-                cursor::MoveTo(1,8),
+                cursor::MoveTo(left_margin,3),
                 Print(format!("Hi {}, your party membership is ", self.player_id)),
+                cursor::MoveTo(left_margin,4),
                 Print(party_membership_string),
                 Print("."),
-                cursor::MoveTo(1,9),
+                cursor::MoveTo(left_margin,5),
             );
 
             if my_player.is_hitler.unwrap() {
@@ -94,14 +90,14 @@ impl state::ActionHandler for IdentityAssignmentHandler {
             }
 
             let ready_string = match self.ready {
-                true => String::from("    [ready] "),
-                false => String::from("    [Press Enter If Ready]    "),
+                true => String::from("[ready]"),
+                false => String::from("[press enter if ready]"),
             };
     
     
             let _res = queue!(
                 stdout(),
-                cursor::MoveTo(1,11),
+                cursor::MoveTo(left_margin,7),
                 Print(ready_string),
             );
             
@@ -111,13 +107,14 @@ impl state::ActionHandler for IdentityAssignmentHandler {
         } else {
             let _res = queue!(
                 stdout(),
-                cursor::MoveTo(1,8),
+                cursor::MoveTo(left_margin,3),
                 Print("Please await your identity..."),
             );
         }
         
 
         crate::render::display_player_names(&shared);
+        crate::render::display_policy_cards(&shared);
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {

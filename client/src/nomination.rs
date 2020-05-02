@@ -1,8 +1,9 @@
 use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
-use crossterm::style::{style, Color};
+use crossterm::style::{style, Color, Attribute};
 use crossterm::event::{KeyEvent, KeyCode};
+
 
 use crate::state;
 
@@ -32,7 +33,7 @@ impl NominationHandler {
 
 impl state::ActionHandler for NominationHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
-
+        let left_margin = 25;
         // TODO find a prettier solution to set the first selected player
         // not pretty to update this here but it is called regularily
         if self.is_president && self.selected_index == None {
@@ -45,18 +46,20 @@ impl state::ActionHandler for NominationHandler {
         }
 
 
-
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(0,7),
-            Print("** Nomination **"),
-            cursor::MoveTo(1,8),
+            cursor::MoveTo(left_margin,1),
+            Print(style("Nomination").attribute(Attribute::Bold)),
         );
+
 
         if self.is_president {
             let _res = queue!(
                 stdout(),
-                Print(format!("{}, you are presidential nominee, please select your chancellor: ", self.player_id)),
+                cursor::MoveTo(left_margin,3),
+                Print(format!("{}, you are presidential nominee, ", self.player_id)),
+                cursor::MoveTo(left_margin,4),
+                Print("please select your chancellor:"),
             );
             if let Some(selected_index) = self.selected_index {
                 let mut draw_index = 0;
@@ -75,7 +78,7 @@ impl state::ActionHandler for NominationHandler {
                         
                         let _res = queue!(
                             stdout(),
-                            cursor::MoveTo(1,10 + draw_index as u16),
+                            cursor::MoveTo(left_margin, 6 + draw_index as u16),
                             Print(name),
                         );
                     }
@@ -86,12 +89,16 @@ impl state::ActionHandler for NominationHandler {
         } else {
             let _res = queue!(
                 stdout(),
-                Print(format!("Please wait while {} is nominating a chancellor candidate...", self.presidential_nominee)),
+                cursor::MoveTo(left_margin, 3),
+                Print(format!("Please wait while {} is nominating", self.presidential_nominee)),
+                cursor::MoveTo(left_margin, 4),
+                Print("a chancellor candidate..."),
             );
         }
 
         
         crate::render::display_player_names(&shared);
+        crate::render::display_policy_cards(&shared);
 
     }
 

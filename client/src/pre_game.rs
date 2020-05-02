@@ -2,6 +2,7 @@ use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
 use crossterm::event::{KeyEvent, KeyCode};
+use crossterm::style::{style, Attribute};
 
 use crate::state;
 
@@ -25,43 +26,28 @@ impl PreGameHandler {
 
 impl state::ActionHandler for PreGameHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
-        // let mut user = String::from("- unknown -");
-        // if let Some(user_name) = shared.user_name.clone() {
-        //     user = user_name;
-        // }
+        let left_margin = 25;
         let user = self.player_id.clone();
 
         let ready_string = match self.ready {
-            true => String::from("    [ready] "),
-            false => String::from("    [Press Enter If Ready]    "),
+            true => String::from( "[ready]"),
+            false => String::from("[press enter if ready]"),
         };
 
-        let players_string = match shared.players.len() {
-            1 => String::from("1 Player"),
-            _ => format!("{} Players", shared.players.len())
-        };
 
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(0,7),
-            Print("** PreGame **"),
-            cursor::MoveTo(1,8),
-            Print(format!("connected as {}", user)),
-            cursor::MoveTo(1,10),
+            cursor::MoveTo(left_margin,1),
+            Print(style("Pregame").attribute(Attribute::Bold)),
+            cursor::MoveTo(left_margin,3),
+            Print(format!("connected as {:8}", user)),
+            cursor::MoveTo(left_margin,5),
             Print(ready_string),
-            cursor::MoveTo(1,13),
-            Print(players_string),
         );
 
         crate::render::display_player_names(&shared);
+        crate::render::display_policy_cards(&shared);
 
-        // for (rel_line, chat_message) in shared.chat_messages.iter().enumerate() {
-        //     let _res = queue!(
-        //         stdout(),
-        //         cursor::MoveTo(1, 25 + rel_line as u16),
-        //         Print(chat_message)
-        //     );
-        // }
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {

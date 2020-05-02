@@ -3,6 +3,7 @@ use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
 use crossterm::event::{KeyEvent, KeyCode};
 // use crossterm::style::{style, Color, Attribute};
+use crossterm::style::{style, Attribute};
 
 
 use crate::state;
@@ -36,12 +37,17 @@ impl ElectionHandler {
 
 impl state::ActionHandler for ElectionHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
+        crate::render::display_player_names(&shared);
+        crate::render::display_policy_cards(&shared);
+        
+        let left_margin = 25;
+        
 
         let vote_selection = match (self.voted, self.selected_vote.clone()) {
-            (false, VoteState::Ja) =>   Print("<< Ja! >>     Nein!   "),
-            (false, VoteState::Nein) => Print("   Ja!     << Nein! >>"),
-            (true, VoteState::Ja) =>    Print("        JA!    "),
-            (true, VoteState::Nein) =>  Print("       NEIN!    "),
+            (false, VoteState::Ja) =>   Print("<Ja!>   Nein!   "),
+            (false, VoteState::Nein) => Print(" Ja!   <Nein!> "),
+            (true, VoteState::Ja) =>    Print("JA!"),
+            (true, VoteState::Nein) =>  Print("NEIN!"),
         };
 
         let todo_str = match self.voted {
@@ -51,27 +57,26 @@ impl state::ActionHandler for ElectionHandler {
 
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(0,7),
-            Print("** Election **"),
-
-            cursor::MoveTo(1,9),
-            Print("Nominees:"),
-            cursor::MoveTo(1,10),
+            cursor::MoveTo(left_margin, 1),
+            Print(style("Election").attribute(Attribute::Bold)),
+            cursor::MoveTo(left_margin, 3),
+            Print("Nominees"),
+            cursor::MoveTo(left_margin, 5),
             Print(format!("President: {}", self.last_president.clone().unwrap() )),
-            cursor::MoveTo(1,11),
+            cursor::MoveTo(left_margin, 6),
             Print(format!("chancellor: {}", self.last_chancellor.clone().unwrap() )),
-            cursor::MoveTo(38,13),
+            cursor::MoveTo(left_margin, 8),
             todo_str,
-            cursor::MoveTo(37,14),
+            cursor::MoveTo(left_margin + 8, 8),
             vote_selection,
-            
         );
+
 
         let number_of_votes = shared.players.iter().filter(|player| player.vote != None).count();
         let number_of_players = shared.players.len();
 
-        let mut i_ja = 5;
-        let mut i_nein = 5;
+        let mut i_ja = 3;
+        let mut i_nein = 3;
         let min_width = match number_of_players {
             10 => 2,
             _ => 1
@@ -80,25 +85,25 @@ impl state::ActionHandler for ElectionHandler {
 
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(40,2 as u16),
+            cursor::MoveTo(left_margin + 15 + 5, 1 as u16),
             Print(format!("Votes ({:width$}/{:width$})", number_of_votes, number_of_players, width = min_width)),
         );
 
         if vote_complete {
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(35,3 as u16),
-                Print(format!("Ja!")),
-                cursor::MoveTo(52,3 as u16),
-                Print(format!("Nein!")),
-            );
+            // let _res = queue!(
+            //     stdout(),
+            //     cursor::MoveTo(left_margin + 8, 8),
+            //     Print(format!("Ja!")),
+            //     cursor::MoveTo(left_margin + 8, 8),
+            //     Print(format!("Nein!")),
+            // );
     
             for player in shared.players.clone() {
                 match player.vote {
                     Some(VoteState::Ja) => {
                         let _res = queue!(
                             stdout(),
-                            cursor::MoveTo(35,i_ja as u16),
+                            cursor::MoveTo(left_margin+15 + 5, i_ja as u16),
                             Print(format!("{}", player.player_id)),
                         );
                         i_ja += 1;
@@ -106,7 +111,7 @@ impl state::ActionHandler for ElectionHandler {
                     Some(VoteState::Nein) => {
                         let _res = queue!(
                             stdout(),
-                            cursor::MoveTo(52,i_nein as u16),
+                            cursor::MoveTo(left_margin + 32,i_nein as u16),
                             Print(format!("{}", player.player_id)),
                         );
                         i_nein += 1;
@@ -119,7 +124,7 @@ impl state::ActionHandler for ElectionHandler {
 
         
 
-        crate::render::display_player_names(&shared);
+
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {

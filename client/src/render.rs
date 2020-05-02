@@ -1,6 +1,7 @@
 use std::io::{stdout, Write};
 use crossterm::{queue, cursor};
 use crossterm::style::{Print};
+use crossterm::style::{style, Color, Attribute};
 
 use crate::state;
 use common::PartyMembership;
@@ -25,18 +26,38 @@ pub fn display_player_names(shared: &state::SharedState) {
         match (player.connection_status.clone(), player.ready) {
             (ConnectionStatus::Connected, true) => name_extensions.push(String::from("(ready)")),
             (ConnectionStatus::Connected, false) => {},
-            (ConnectionStatus::Disconnected, _) => name_extensions.push(String::from("(disconnected)")),
+            (ConnectionStatus::Disconnected, _) => name_extensions.push(String::from("(disc)")),
         }
 
-        let mut player_str = format!("{:14}", player.player_id);
+        let mut player_str = format!("{:8}", player.player_id);
         for ext in name_extensions {
             player_str = format!("{} {}", player_str, ext);
         }
         
         let _res = queue!(
             stdout(),
-            cursor::MoveTo(1,15+rel_line as u16),
+            cursor::MoveTo(1,1 as u16),
+            Print(style("Players").attribute(Attribute::Bold)),
+            cursor::MoveTo(1,3+rel_line as u16),
             Print(player_str)
         );
     }
 }
+
+pub fn display_policy_cards(_: &state::SharedState) {
+    let left_margin = 25;
+    let _res = queue!(
+        stdout(),
+        cursor::MoveTo(left_margin + 3,11),Print("  ___    ___    ___    ___    ___    ___"), 
+        cursor::MoveTo(left_margin + 3,12),Print(" |   |  |   |  |   |  |   |  |   |  |   |"), 
+        cursor::MoveTo(left_margin + 3,13),Print(" |   |  |   |  |   |  |   |  |   |  |   |"), 
+        cursor::MoveTo(left_margin + 3,14),Print(" |___|  |___|  |___|  |___|  |___|  |___|"), 
+        cursor::MoveTo(left_margin + 3,15),Print("                                           "), 
+        cursor::MoveTo(left_margin + 3,16),Print("------------------------------------------ "),
+        cursor::MoveTo(left_margin + 3,17),Print("  ___    ___    ___    ___    ___          "), 
+        cursor::MoveTo(left_margin + 3,18),Print(" |   |  |   |  |   |  |   |  |   |         "), 
+        cursor::MoveTo(left_margin + 3,19),Print(" |   |  |   |  |   |  |   |  |   |         "), 
+        cursor::MoveTo(left_margin + 3,20),Print(" |___|  |___|  |___|  |___|  |___|         "), 
+    );
+}
+
