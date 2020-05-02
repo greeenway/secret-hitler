@@ -24,7 +24,7 @@ fn main() -> std::io::Result<()> {
     // let game_state = state::GameState::new(config.clone());
 
     // seed game state
-    let game_state = seeds::seed_game_state(config.clone());
+    let game_state = seeds::seed_game_state(config.clone(), "election");
     
     // TODO save server state regularly
     // TODO reload from server state
