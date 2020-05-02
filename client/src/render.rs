@@ -7,7 +7,7 @@ use crate::state;
 use common::PartyMembership;
 use common::ConnectionStatus;
 
-pub fn display_player_names(shared: &state::SharedState) {
+pub fn display_player_names(shared: &state::SharedState, player_id: String) {
     for (rel_line, player) in shared.players.iter().enumerate() {
 
         let mut name_extensions: Vec<String>= Vec::new();
@@ -40,6 +40,28 @@ pub fn display_player_names(shared: &state::SharedState) {
             Print(style("Players").attribute(Attribute::Bold)),
             cursor::MoveTo(1,3+rel_line as u16),
             Print(player_str)
+        );
+
+        
+    }
+    if let Some(me) = shared.players.iter().find(|player| player.player_id == player_id) {
+        let connect_str = match (&me.party_membership, me.is_hitler) {
+            (Some(_), Some(_)) => style(", "),
+            _ => style(""),
+        };
+        let role_str = match (&me.party_membership, me.is_hitler) {
+            (Some(common::PartyMembership::Fascist), Some(true)) => style("Hitler").with(Color::Red),
+            (Some(common::PartyMembership::Fascist), Some(false)) => style("Fascist").with(Color::Red),
+            (Some(common::PartyMembership::Liberal), Some(false)) => style("Liberal").with(Color::Blue),
+            _ => style(""),
+        };
+    
+        let _res = queue!(
+            stdout(),
+            cursor::MoveTo(1, 20),
+            Print(style(player_id).attribute(Attribute::Bold)),
+            Print(connect_str),
+            Print(role_str),
         );
     }
 }

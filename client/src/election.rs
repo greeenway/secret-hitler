@@ -37,7 +37,7 @@ impl ElectionHandler {
 
 impl state::ActionHandler for ElectionHandler {
     fn draw(&mut self, shared: &mut state::SharedState) {
-        crate::render::display_player_names(&shared);
+        crate::render::display_player_names(&shared, self.player_id.clone());
         crate::render::display_policy_cards(&shared);
         
         let left_margin = 25;

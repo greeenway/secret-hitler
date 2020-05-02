@@ -44,7 +44,7 @@ impl state::ActionHandler for LegislativeSessionHandler {
         );
 
 
-        crate::render::display_player_names(&shared);
+        crate::render::display_player_names(&shared, self.player_id.clone());
         crate::render::display_policy_cards(&shared);
     }
 

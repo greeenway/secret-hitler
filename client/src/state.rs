@@ -41,7 +41,7 @@ impl ActionHandler for HandlerWrapper {
             _ => {
                 let _res = queue!(
                     stdout(),
-                    cursor::MoveTo(3,8),
+                    cursor::MoveTo(20,10),
                     Print("Reconnecting... "),
                     
         
