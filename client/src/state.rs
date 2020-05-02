@@ -12,6 +12,7 @@ use crate::pre_game;
 use crate::identity_assignment;
 use crate::election;
 use crate::nomination;
+use crate::legislative_session;
 
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -25,6 +26,7 @@ pub enum HandlerWrapper {
     IdentityAssignment(identity_assignment::IdentityAssignmentHandler),
     Nomination(nomination::NominationHandler),
     Election(election::ElectionHandler),
+    LegislativeSession(legislative_session::LegislativeSessionHandler),
 }
 
 impl ActionHandler for HandlerWrapper {
@@ -35,6 +37,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::IdentityAssignment(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::Nomination(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::Election(inner_handler), true) => inner_handler.draw(shared),
+            (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.draw(shared),
             _ => {
                 let _res = queue!(
                     stdout(),
@@ -54,6 +57,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::IdentityAssignment(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::Nomination(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::Election(inner_handler), true) => inner_handler.handle_event(shared, event),
+            (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.handle_event(shared, event),
             _ => {},
         }
     }
@@ -140,6 +144,13 @@ impl State {
                             Some(chancellor_nominee),
                         ))
                     },
+                    ServerState::LegislativeSession{president, chancellor} => {
+                        self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
+                            user_name,
+                            president,
+                            chancellor,
+                        ))
+                    },
                     ServerState::GameOver => {},
                     // _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
                 }
@@ -185,7 +196,8 @@ impl State {
                     (HandlerWrapper::PreGame(_), ServerState::Pregame) => {},
                     (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
                     (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
-                    (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {}
+                    (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {},
+                    (HandlerWrapper::LegislativeSession(_), ServerState::LegislativeSession{president, chancellor}) => {},
                     
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
@@ -204,6 +216,13 @@ impl State {
                             fail_count,
                             Some(presidential_nominee), 
                             Some(chancellor_nominee)
+                        ));
+                    },
+                    (_, ServerState::LegislativeSession{president, chancellor}) => {
+                        self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
+                            player_id.unwrap(),
+                            president,
+                            chancellor,
                         ));
                     },
                     // todo other state changes

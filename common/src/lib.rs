@@ -72,6 +72,7 @@ pub enum ServerState {
     IdentityAssignment {identities_assigned: bool},
     Nomination {last_president: Option<String>, last_chancellor: Option<String>, presidential_nominee: String},
     Election {fail_count: u8, presidential_nominee: String, chancellor_nominee: String},
+    LegislativeSession {president: String, chancellor: String},
     GameOver,
 }
 

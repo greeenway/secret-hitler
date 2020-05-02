@@ -237,6 +237,9 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 // vote succeeded
                                 println!("vote passed!");
                                 data.shared.votes = None;
+                                data.state = ServerState::LegislativeSession{president: presidential_nominee.clone(), 
+                                    chancellor: chancellor_nominee.clone()};
+
                             } else {
                                 // vote failed
                                 // TODO check for chaos -> transition to chaos if fail count is high enough

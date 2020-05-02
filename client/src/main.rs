@@ -33,6 +33,7 @@ mod pre_game;
 mod identity_assignment;
 mod nomination;
 mod election;
+mod legislative_session;
 
 
 // TODO: refactor main.rs of client into multiple files (per state? at least)
