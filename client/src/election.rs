@@ -10,6 +10,7 @@ use crate::state;
 use common::VoteState;
 
 //press space to go to next phase
+// FIXME show "ja/nein" above voter names
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct ElectionHandler {

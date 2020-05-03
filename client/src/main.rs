@@ -80,8 +80,13 @@ fn execute_command(command: String, mut data: std::sync::MutexGuard<'_, State>) 
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        panic!("usage: cmd [configfile.yaml]");
+    let mut user_name: Option<String> = None;
+    match args.len() {
+        2 => {},
+        3 => {
+            user_name = Some(args[2].clone());
+        },
+        _=> panic!("usage: cmd [configfile.yaml]"),
     }
 
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
@@ -96,6 +101,10 @@ fn main() -> Result<()> {
     let alive_stream = stream.try_clone()?;
 
     let client_state = Arc::new(Mutex::new(State::new(config.clone())));
+    if let Some(name) = user_name {
+        client_state.lock().unwrap().shared.outbox.push_back(common::ClientMessage::Connect{name: name});
+    }
+    
 
     // let stop_alive_thread = Arc::new(Mutex::new(false));
     let stop_alive_copy = Arc::clone(&client_state);
@@ -109,6 +118,7 @@ fn main() -> Result<()> {
                 }
             }
             send_message(&alive_stream, common::ClientMessage::StillAlive, Show::DontPrintMessage);
+            
             thread::sleep(time::Duration::from_millis(4000));
         }
     });
@@ -228,6 +238,7 @@ fn main() -> Result<()> {
             
         }
     });
+
 
     // start thread mutex 
     let thread_mutex = client_state.clone();
