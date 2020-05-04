@@ -306,7 +306,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
                                 match data.shared.policies_received.len() {
                                     0 => {},
-                                    3 => {
+                                    2 => {
                                         // TODO verify that those cards are valid
                                         // let data.shared.current_cards
                                         for returned_card in data.shared.policies_received.clone() {
@@ -317,8 +317,10 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                         data.shared.discard_pile.push(discard_card); // put the remaining card to discard
                                         data.shared.current_cards = data.shared.policies_received.clone();
                                         
+                                        data.shared.policies_received = Vec::new();
                                         data.state = ServerState::LegislativeSession {president, chancellor,
-                                            substate: LegisationSubState::ChancellorsChoice, waiting: true};
+                                            substate: LegisationSubState::ChancellorsChoice, waiting: false};
+                                        println!("going to chancelorschoice state");
                                     },
                                     _ => panic!("got invalid amount of policies {}", data.shared.policies_received.len()),
                                 }
@@ -335,6 +337,35 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 data.queue_message(c.thread_id, 
                                     ServerMessage::PolicyUpdate{cards: cards_to_send});
                                 data.state = ServerState::LegislativeSession {president, chancellor, substate, waiting: true};
+                            } else {
+                                //waiting == true
+                                let players = data.shared.players.clone();
+                                let c = players.iter().find(|player| player.player_id == chancellor).unwrap();
+                                let cards_to_send = data.shared.current_cards.clone();
+
+                                data.queue_message(c.thread_id, 
+                                    ServerMessage::PolicyUpdate{cards: cards_to_send});
+
+                                println!("got {} policies", data.shared.policies_received.len());
+                                match data.shared.policies_received.len() {
+                                    0 => {},
+                                    1 => {
+                                        // TODO verify that those cards are valid
+                                        // let data.shared.current_cards
+                                        for returned_card in data.shared.policies_received.clone() {
+                                            let index = data.shared.current_cards.iter().position(|x| *x == returned_card).unwrap();
+                                            data.shared.current_cards.remove(index);
+                                        }
+                                        let discard_card = data.shared.current_cards[0].clone();
+                                        data.shared.discard_pile.push(discard_card); // put the remaining card to discard
+                                        data.shared.current_cards = data.shared.policies_received.clone();
+                                        
+                                        data.state = ServerState::LegislativeSession {president, chancellor,
+                                            substate: LegisationSubState::Done, waiting: false};
+                                        println!("chancellor selected a policy");
+                                    },
+                                    _ => panic!("got invalid amount of policies {}", data.shared.policies_received.len()),
+                                }
                             }
                             
                             // wait for policy respone

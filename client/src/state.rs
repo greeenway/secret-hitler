@@ -146,6 +146,11 @@ impl State {
                         ))
                     },
                     ServerState::LegislativeSession{president, chancellor, substate, waiting: _} => {
+                        let selected_policies = match substate {
+                            common::LegisationSubState::PresidentsChoice => vec![false, false, false],
+                            common::LegisationSubState::ChancellorsChoice => vec![false, false],
+                            _ => Vec::new(),
+                        };
                         self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
                             user_name,
                             president,
@@ -153,7 +158,7 @@ impl State {
                             substate,
                             Vec::new(),
                             0,
-                            vec![false, false, false],
+                            selected_policies,
                         ))
                     },
                     ServerState::GameOver => {},
@@ -217,7 +222,27 @@ impl State {
                     (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
                     (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
                     (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {},
-                    (HandlerWrapper::LegislativeSession(_), ServerState::LegislativeSession{president, chancellor, substate, waiting}) => {}, 
+                    (HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler{player_id, president,
+                        chancellor, substate, my_cards: _, cursor_position, selected_policies: _}), 
+                        ServerState::LegislativeSession{president: s_president, chancellor: s_chancellor, substate: s_substate, waiting: s_waiting}) => {
+                            if substate != s_substate { // substate change
+                                let selected_policies = match s_substate {
+                                    common::LegisationSubState::PresidentsChoice => vec![false, false, false],
+                                    common::LegisationSubState::ChancellorsChoice => vec![false, false],
+                                    _ => Vec::new(),
+                                };
+
+                                self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
+                                    player_id,
+                                    president,
+                                    chancellor,
+                                    s_substate,
+                                    Vec::new(),
+                                    0,
+                                    selected_policies,
+                                ));
+                            }
+                        }, 
                     
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
