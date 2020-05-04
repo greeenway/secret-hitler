@@ -86,6 +86,8 @@ pub fn seed_game_state(config: Configuration, state: &str) -> GameState {
             game_state.state = ServerState::LegislativeSession{
                 chancellor: String::from("lukas"),
                 president: String::from("val"),
+                substate: common::LegisationSubState::PresidentsChoice,
+                waiting: false,
             };
             
             let mut p1 = Player::new(String::from("lukas"), 0);

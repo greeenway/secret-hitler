@@ -27,10 +27,17 @@ pub enum ClientMessage {
     Quit,
     Nominated {chancellor_nominee: String},
     Vote { selected: VoteState , player_id: String},
+    PolicyResponse {selected_policies: Vec<PolicyCard>},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum PartyMembership {
+    Fascist,
+    Liberal,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum PolicyCard {
     Fascist,
     Liberal,
 }
@@ -67,12 +74,20 @@ impl Player {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum LegisationSubState {
+    PresidentsChoice,
+    ChancellorsChoice,
+    Done,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ServerState {
     Pregame,
     IdentityAssignment {identities_assigned: bool},
     Nomination {last_president: Option<String>, last_chancellor: Option<String>, presidential_nominee: String},
     Election {fail_count: u8, presidential_nominee: String, chancellor_nominee: String},
-    LegislativeSession {president: String, chancellor: String},
+    LegislativeSession {president: String, chancellor: String, substate: LegisationSubState, 
+        waiting: bool},
     GameOver,
 }
 
@@ -89,6 +104,7 @@ pub enum ServerMessage {
     Advance,                             // server pushes users to next state
     AdvanceNomination {presidential_nominee: String},
     Chat {user_name: String, message: String},
+    PolicyUpdate{cards: Vec<PolicyCard>},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

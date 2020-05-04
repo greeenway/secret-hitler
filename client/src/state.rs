@@ -82,6 +82,7 @@ pub struct SharedState {
 
 impl SharedState {
     pub fn new(config: common::Configuration) -> SharedState {
+
         SharedState {
             cmd_prompt: false,
             enable_debug_console: config.enable_debug_console,
@@ -144,11 +145,15 @@ impl State {
                             Some(chancellor_nominee),
                         ))
                     },
-                    ServerState::LegislativeSession{president, chancellor} => {
+                    ServerState::LegislativeSession{president, chancellor, substate, waiting: _} => {
                         self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
                             user_name,
                             president,
                             chancellor,
+                            substate,
+                            Vec::new(),
+                            0,
+                            vec![false, false, false],
                         ))
                     },
                     ServerState::GameOver => {},
@@ -179,7 +184,22 @@ impl State {
             (HandlerWrapper::PreGame(_), ServerMessage::Chat{user_name, message}) => {
                 self.shared.chat_messages.push_back(format!("{}: {}", user_name, message));
             },
-            (_, ServerMessage::Advance) => {}, // TODO handle this more carefully
+            (_, ServerMessage::Advance) => {}, // TODO is this still needed? or can we remove this?
+
+            (HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler{player_id, president,
+                chancellor, substate, my_cards: _, cursor_position, selected_policies}),
+                ServerMessage::PolicyUpdate{cards}) => {
+                self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
+                    player_id,
+                    president,
+                    chancellor,
+                    substate,
+                    cards,
+                    cursor_position,
+                    selected_policies,
+                ));
+
+            },
             // (HandlerWrapper::IdentityAssignment(_), ServerMessage::StatusUpdate{players}) => {
             //     self.shared.players = players;
             // },
@@ -197,7 +217,7 @@ impl State {
                     (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
                     (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
                     (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {},
-                    (HandlerWrapper::LegislativeSession(_), ServerState::LegislativeSession{president, chancellor}) => {},
+                    (HandlerWrapper::LegislativeSession(_), ServerState::LegislativeSession{president, chancellor, substate, waiting}) => {}, 
                     
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
@@ -218,11 +238,15 @@ impl State {
                             Some(chancellor_nominee)
                         ));
                     },
-                    (_, ServerState::LegislativeSession{president, chancellor}) => {
+                    (_, ServerState::LegislativeSession{president, chancellor, substate, waiting: _}) => {
                         self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
                             player_id.unwrap(),
                             president,
                             chancellor,
+                            substate,
+                            Vec::new(),
+                            0,
+                            vec![false, false, false],
                         ));
                     },
                     // todo other state changes

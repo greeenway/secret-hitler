@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use rand::thread_rng;
+use rand::seq::SliceRandom;
 
 use common::ServerMessage;
 use common::ConnectionStatus;
@@ -14,16 +16,34 @@ pub struct SharedState {
     pub fascist_known_by_hitler: Option<bool>,
     pub player_number: Option<u8>,
     pub votes: Option<HashMap<String, VoteState>>,
+    pub draw_pile: Vec<common::PolicyCard>,
+    pub discard_pile: Vec<common::PolicyCard>,
+    pub current_cards: Vec<common::PolicyCard>,
+    pub policies_received: Vec<common::PolicyCard>,
 }
 
 impl SharedState {
     pub fn new(_: common::Configuration) -> SharedState {
+        let mut draw_pile = Vec::new();
+        for _ in 0..11 {
+            draw_pile.push(common::PolicyCard::Fascist);
+        }
+        for _ in 0..6 {
+            draw_pile.push(common::PolicyCard::Liberal);
+        }
+
+        draw_pile.shuffle(&mut thread_rng());
+
         SharedState {
             players: Vec::new(),
             outboxes: HashMap::new(),
             fascist_known_by_hitler: None,
             player_number: None,
             votes: None,
+            draw_pile,
+            discard_pile: Vec::new(),
+            current_cards: Vec::new(),
+            policies_received: Vec::new(),
         }
     }
 }
@@ -146,7 +166,11 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                 votes.insert( player_id, selected); // TODO: find a better way, than creating the hashmap again...
                 state.shared.votes = Some(votes);
             }
-        }
+        },
+        common::ClientMessage::PolicyResponse { selected_policies } => {
+            state.shared.policies_received = selected_policies;
+        },
+
         common::ClientMessage::StillAlive => {
             // ignore here, as it is handled by communicate module
         },

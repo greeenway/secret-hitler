@@ -8,6 +8,7 @@ use rand::prelude::*;
 
 extern crate common;
 use common::{ServerMessage, ConnectionStatus, ServerState};
+use common::LegisationSubState;
 
 pub fn all_players_ready(players: Vec<common::Player>) -> bool {
     let ready_count = players.iter().filter(|player| player.ready == true).count();
@@ -238,7 +239,8 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 println!("vote passed!");
                                 data.shared.votes = None;
                                 data.state = ServerState::LegislativeSession{president: presidential_nominee.clone(), 
-                                    chancellor: chancellor_nominee.clone()};
+                                    chancellor: chancellor_nominee.clone(), 
+                                    substate: common::LegisationSubState::PresidentsChoice, waiting: false};
 
                             } else {
                                 // vote failed
@@ -264,6 +266,86 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
 
 
+                },
+
+                ServerState::LegislativeSession {president, chancellor, substate, waiting} => {
+                    match substate {
+                        LegisationSubState::PresidentsChoice => {
+                            if waiting == false {
+                                // check if policy pile is empty or < 3 -> shuffle discard pile into policy pile
+                                if data.shared.draw_pile.len() < 3 {
+                                    println!("reshuffled draw pile");
+                                    let discard = data.shared.discard_pile.clone();
+                                    data.shared.draw_pile.extend(discard);
+                                    data.shared.discard_pile = Vec::new();
+                                }
+
+                                // pick policy cards, send policy cards to president
+                                for _ in 0..3 {
+                                    let card = data.shared.draw_pile.pop().unwrap(); // this should always work
+                                    data.shared.current_cards.push(card);
+                                }
+
+                                let players = data.shared.players.clone();
+                                let p = players.iter().find(|player| player.player_id == president).unwrap();
+                                let cards_to_send = data.shared.current_cards.clone();
+                                data.queue_message(p.thread_id, 
+                                    ServerMessage::PolicyUpdate{cards: cards_to_send});
+                                println!("sent policies to president");
+                                data.state = ServerState::LegislativeSession {president, chancellor, substate, waiting: true};
+                            } else {
+                                // let pres_message = 
+                                // TODO maybe this can be removed later
+                                // resend policies in case client didn't get them
+                                let players = data.shared.players.clone();
+                                let p = players.iter().find(|player| player.player_id == president).unwrap();
+                                let cards_to_send = data.shared.current_cards.clone();
+                                data.queue_message(p.thread_id, 
+                                    ServerMessage::PolicyUpdate{cards: cards_to_send});
+                                println!("sent policies to president");
+
+                                match data.shared.policies_received.len() {
+                                    0 => {},
+                                    3 => {
+                                        // TODO verify that those cards are valid
+                                        // let data.shared.current_cards
+                                        for returned_card in data.shared.policies_received.clone() {
+                                            let index = data.shared.current_cards.iter().position(|x| *x == returned_card).unwrap();
+                                            data.shared.current_cards.remove(index);
+                                        }
+                                        let discard_card = data.shared.current_cards[0].clone();
+                                        data.shared.discard_pile.push(discard_card); // put the remaining card to discard
+                                        data.shared.current_cards = data.shared.policies_received.clone();
+                                        
+                                        data.state = ServerState::LegislativeSession {president, chancellor,
+                                            substate: LegisationSubState::ChancellorsChoice, waiting: true};
+                                    },
+                                    _ => panic!("got invalid amount of policies {}", data.shared.policies_received.len()),
+                                }
+                            }
+                            
+                        },
+                        LegisationSubState::ChancellorsChoice => {
+                            // send policy cards to chancellor
+                            if waiting == false {
+                                let players = data.shared.players.clone();
+                                let c = players.iter().find(|player| player.player_id == chancellor).unwrap();
+                                let cards_to_send = data.shared.current_cards.clone();
+
+                                data.queue_message(c.thread_id, 
+                                    ServerMessage::PolicyUpdate{cards: cards_to_send});
+                                data.state = ServerState::LegislativeSession {president, chancellor, substate, waiting: true};
+                            }
+                            
+                            // wait for policy respone
+                            // put remaining card to discard pile
+                            // enact policy -> there should be some kind of a win condition check here eventually
+                        },
+                        LegisationSubState::Done => {
+                            // wait for players to get ready
+                            // continue to nomination state
+                        }
+                    }
                 }
                 _ => {}
             }
