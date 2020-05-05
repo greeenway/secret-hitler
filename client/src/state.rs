@@ -227,12 +227,12 @@ impl State {
                     // identity mappings
                     (HandlerWrapper::LoginScreen(_), _) => {}, // we need an explicit reconnect message to move to another state
                     (HandlerWrapper::PreGame(_), ServerState::Pregame) => {},
-                    (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned}) => {},
-                    (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
-                    (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {},
+                    (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned: _}) => {},
+                    (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president: _, last_chancellor: _, presidential_nominee: _}) => {},
+                    (HandlerWrapper::Election(_), ServerState::Election{fail_count: _, chancellor_nominee: _, presidential_nominee: _}) => {},
                     (HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler{player_id, president,
-                        chancellor, substate, my_cards: _, cursor_position, selected_policies: _, ready: _}), 
-                        ServerState::LegislativeSession{president: s_president, chancellor: s_chancellor, substate: s_substate, waiting: s_waiting}) => {
+                        chancellor, substate, my_cards: _, cursor_position: _, selected_policies: _, ready: _}), 
+                        ServerState::LegislativeSession{president: _, chancellor: _, substate: s_substate, waiting: _}) => {
                             if substate != s_substate { // substate change
                                 let selected_policies = match s_substate {
                                     common::LegisationSubState::PresidentsChoice => vec![false, false, false],
