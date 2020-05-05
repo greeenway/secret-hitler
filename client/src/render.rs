@@ -66,7 +66,7 @@ pub fn display_player_names(shared: &state::SharedState, player_id: String) {
     }
 }
 
-pub fn display_policy_cards(_: &state::SharedState) {
+pub fn display_policy_cards(shared: &state::SharedState) {
     let left_margin = 25;
     let _res = queue!(
         stdout(),
@@ -81,5 +81,20 @@ pub fn display_policy_cards(_: &state::SharedState) {
         cursor::MoveTo(left_margin + 3,19),Print(" |   |  |   |  |   |  |   |  |   |         "), 
         cursor::MoveTo(left_margin + 3,20),Print(" |___|  |___|  |___|  |___|  |___|         "), 
     );
+
+    for i in 0..shared.fascist_policies_count {
+        let _res = queue!(
+            stdout(),
+            cursor::MoveTo(left_margin + 6 + (i as u16 *7),13), Print(style("F").attribute(Attribute::Bold).with(Color::Red)),
+        );
+    }
+
+    for i in 0..shared.liberal_policies_count {
+        let _res = queue!(
+            stdout(),
+            cursor::MoveTo(left_margin + 6 + (i as u16 *7),19), Print(style("L").attribute(Attribute::Bold).with(Color::Blue)),
+        );
+    }
+
 }
 

@@ -20,6 +20,8 @@ pub struct SharedState {
     pub discard_pile: Vec<common::PolicyCard>,
     pub current_cards: Vec<common::PolicyCard>,
     pub policies_received: Vec<common::PolicyCard>,
+    pub liberal_policies_count: u8,
+    pub fascist_policies_count: u8,
 }
 
 impl SharedState {
@@ -44,6 +46,8 @@ impl SharedState {
             discard_pile: Vec::new(),
             current_cards: Vec::new(),
             policies_received: Vec::new(),
+            liberal_policies_count: 0,
+            fascist_policies_count: 0,
         }
     }
 }

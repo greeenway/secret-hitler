@@ -19,12 +19,13 @@ pub struct LegislativeSessionHandler {
     pub substate: LegisationSubState,
     pub my_cards: Vec<PolicyCard>,
     pub selected_policies: Vec<bool>,
+    pub ready: bool,
 }
 
 
 impl LegislativeSessionHandler {
     pub fn new(player_id: String, president: String, chancellor: String, substate: LegisationSubState,
-            my_cards: Vec<PolicyCard>, cursor_position: i16, selected_policies: Vec<bool>) -> Self {
+            my_cards: Vec<PolicyCard>, cursor_position: i16, selected_policies: Vec<bool>, ready: bool) -> Self {
         Self {
             player_id,
             // ready: false,
@@ -34,6 +35,7 @@ impl LegislativeSessionHandler {
             substate,
             my_cards,
             selected_policies,
+            ready,
         }
     }
 }
@@ -87,27 +89,12 @@ impl state::ActionHandler for LegislativeSessionHandler {
             let _res = queue!(
                 stdout(),
                 cursor::MoveTo(left_margin+20,6),
-                Print("Select policies with space,"),
+                Print("Select 2 policies with space,"),
                 cursor::MoveTo(left_margin+20,7),
                 Print("confirm by pressing enter."),
             );
         }
 
-        // let _res = queue!(
-        //     stdout(),
-        //     cursor::MoveTo(left_margin+20,8),
-        //     Print(format!("{:?}", self.substate)),
-            
-        // );
-        // if self.player_id == self.chancellor && self.substate == common::LegisationSubState::ChancellorsChoice {
-        //     let _res = queue!(
-        //         stdout(),
-        //         cursor::MoveTo(left_margin+20,6),
-        //         Print("Select policies with space,"),
-        //         cursor::MoveTo(left_margin+20,7),
-        //         Print("confirm by pressing enter."),
-        //     );
-        // }
         if self.player_id == self.chancellor && self.my_cards.len() == 2 && self.substate == common::LegisationSubState::ChancellorsChoice {
 
             for (i,card) in self.my_cards.iter().enumerate() {
@@ -136,19 +123,39 @@ impl state::ActionHandler for LegislativeSessionHandler {
             let _res = queue!(
                 stdout(),
                 cursor::MoveTo(left_margin+20,6),
-                Print("Select policies with space,"),
-                cursor::MoveTo(left_margin+20,7),
-                Print("confirm by pressing enter."),
+                Print("Press enter to enact policy."),
             );
         }
 
         if self.substate == common::LegisationSubState::Done {
+            // style("Liberal").attribute(Attribute::Bold).with(Color::Blue)
+            // style("Fascist").attribute(Attribute::Bold).with(Color::Blue)
+            if self.my_cards.len() > 0 {
+                let polcy_type = match self.my_cards[0] {
+                    PolicyCard::Liberal => style("Liberal").attribute(Attribute::Bold).with(Color::Blue),
+                    PolicyCard::Fascist => style("Fascist").attribute(Attribute::Bold).with(Color::Red),
+                };
 
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(left_margin+20,6),
-                Print("Policy selected!"), // TODO show selected policy and wait for ready
-            );
+                let _res = queue!(
+                    stdout(),
+                    cursor::MoveTo(left_margin,6),
+                    Print("A "),
+                    Print(polcy_type),
+                    Print(" policy was enacted."),
+                );
+
+                let ready_string = match self.ready {
+                    true => String::from("[ready]"),
+                    false => String::from("[press enter if ready]"),
+                };
+        
+        
+                let _res = queue!(
+                    stdout(),
+                    cursor::MoveTo(left_margin,8),
+                    Print(ready_string),
+                );
+            }
         }
 
 
@@ -218,33 +225,27 @@ impl state::ActionHandler for LegislativeSessionHandler {
                 } => {
                     self.cursor_position = std::cmp::min(self.cursor_position + 1, 1);
                 },
-                KeyEvent{
-                    code: KeyCode::Char(' '),
-                    modifiers: _,
-                } => {
-                    let selected_count = self.selected_policies.iter().filter(|&p| *p).count();
-                    if selected_count < 1 || self.selected_policies[self.cursor_position as usize] == true {
-                        self.selected_policies[self.cursor_position as usize] = !self.selected_policies[self.cursor_position as usize];
-                    }
-                }
                 
                 KeyEvent{
                     code: KeyCode::Enter,
                     modifiers: _,
                 } => {
-                    let selected_count = self.selected_policies.iter().filter(|&p| *p).count();
+                    self.selected_policies[self.cursor_position as usize] = true;
+                    let policies = vec![self.my_cards[self.cursor_position as usize].clone()];
+                    shared.outbox.push_back(common::ClientMessage::PolicyResponse{selected_policies: policies});
+                }
+                _ => {},
+            }
+        }
 
-                    if self.my_cards.len() == 2 && selected_count == 1 {
-                        let mut policies: Vec<PolicyCard> = Vec::new();
-                        for i in 0..2 {
-                            if self.selected_policies[i] {
-                                policies.push(self.my_cards[i].clone());
-                            }
-                        }
-                        shared.outbox.push_back(common::ClientMessage::PolicyResponse{selected_policies: policies});
-                    }
-                    
-
+        if self.substate == common::LegisationSubState::Done {
+            match event {
+                KeyEvent{
+                    code: KeyCode::Enter,
+                    modifiers: _,
+                } => {
+                    self.ready = !self.ready;
+                    shared.outbox.push_back(common::ClientMessage::Ready{ready: self.ready});
                 }
                 _ => {},
             }

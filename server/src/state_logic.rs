@@ -42,7 +42,8 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                 }).collect();
             }
             
-
+            let liberal_policies_count = data.shared.liberal_policies_count;
+            let fascist_policies_count = data.shared.fascist_policies_count;
 
             for player in data.shared.players.clone() {
                 if player.connection_status == ConnectionStatus::Connected {
@@ -55,7 +56,10 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             if player.is_hitler.unwrap() == false || data.shared.fascist_known_by_hitler.unwrap() {
                                 data.queue_message(
                                     player.thread_id,
-                                    ServerMessage::StatusUpdate{players: current_players.clone(), state: state, player_id: Some(player.player_id)}
+                                    ServerMessage::StatusUpdate{players: current_players.clone(), state: state, player_id: Some(player.player_id),
+                                        liberal_policies_count: liberal_policies_count,
+                                        fascist_policies_count: fascist_policies_count,
+                                    }
                                 );
                             } else {
                                 // hide party member ships for hitler
@@ -68,7 +72,10 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 }).collect();
                                 data.queue_message(
                                     player.thread_id,
-                                    ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id)}
+                                    ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id),
+                                    liberal_policies_count: liberal_policies_count,
+                                    fascist_policies_count: fascist_policies_count,
+                                    }
                                 );
                             }
                         },
@@ -83,13 +90,18 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             }).collect();
                             data.queue_message(
                                 player.thread_id,
-                                ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id)}
+                                ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id),
+                                    liberal_policies_count: liberal_policies_count,
+                                    fascist_policies_count: fascist_policies_count,
+                                }
                             );
                         },
                         None => {
                             data.queue_message(
                                 player.thread_id,
-                                ServerMessage::StatusUpdate{players: current_players.clone(), state: state, player_id: Some(player.player_id)}
+                                ServerMessage::StatusUpdate{players: current_players.clone(), state: state, player_id: Some(player.player_id),
+                                    liberal_policies_count: liberal_policies_count,
+                                    fascist_policies_count: fascist_policies_count,}
                             );
                         },
                     }
@@ -375,6 +387,24 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         LegisationSubState::Done => {
                             // wait for players to get ready
                             // continue to nomination state
+                            let current_cards = data.shared.current_cards.clone();
+
+                            for player in data.shared.players.clone() {
+                                data.queue_message(player.thread_id, 
+                                    ServerMessage::PolicyUpdate{cards: current_cards.clone()});
+                            }
+                            if waiting {
+                                // wait for players to get ready...
+                                
+                            } else {
+                                match current_cards[0] {
+                                    common::PolicyCard::Fascist => data.shared.fascist_policies_count += 1,
+                                    common::PolicyCard::Liberal => data.shared.liberal_policies_count += 1,
+                                }
+
+                                data.state = ServerState::LegislativeSession {president, chancellor,
+                                    substate: LegisationSubState::Done, waiting: true};
+                            }
                         }
                     }
                 }

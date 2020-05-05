@@ -43,8 +43,6 @@ impl ActionHandler for HandlerWrapper {
                     stdout(),
                     cursor::MoveTo(20,10),
                     Print("Reconnecting... "),
-                    
-        
                 );
             },
         }
@@ -77,6 +75,8 @@ pub struct SharedState {
     pub players: Vec<common::Player>,
     pub chat_messages: VecDeque<String>,
     pub in_sync: bool,
+    pub liberal_policies_count: u8,
+    pub fascist_policies_count: u8,
 }
 
 
@@ -95,6 +95,8 @@ impl SharedState {
             players: Vec::new(),
             chat_messages: VecDeque::new(),
             in_sync: true,
+            liberal_policies_count: 0,
+            fascist_policies_count: 0,
         }
     }
 }
@@ -159,6 +161,7 @@ impl State {
                             Vec::new(),
                             0,
                             selected_policies,
+                            false,
                         ))
                     },
                     ServerState::GameOver => {},
@@ -192,7 +195,7 @@ impl State {
             (_, ServerMessage::Advance) => {}, // TODO is this still needed? or can we remove this?
 
             (HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler{player_id, president,
-                chancellor, substate, my_cards: _, cursor_position, selected_policies}),
+                chancellor, substate, my_cards: _, cursor_position, selected_policies, ready}),
                 ServerMessage::PolicyUpdate{cards}) => {
                 self.handler = HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler::new(
                     player_id,
@@ -202,6 +205,7 @@ impl State {
                     cards,
                     cursor_position,
                     selected_policies,
+                    ready,
                 ));
 
             },
@@ -211,9 +215,12 @@ impl State {
             // idea: match server_state and current client state
             // if they are the same, stay in state, else move to next state as indicated by server
             // we potentially need to adjust the client states a bit to be robust against this frequent "resetting"
-            (_, ServerMessage::StatusUpdate{players, state: server_state, player_id}) => {
+            (_, ServerMessage::StatusUpdate{players, state: server_state, player_id, 
+                liberal_policies_count, fascist_policies_count}) => {
                 self.shared.players = players;
                 self.shared.in_sync = true;
+                self.shared.liberal_policies_count = liberal_policies_count;
+                self.shared.fascist_policies_count = fascist_policies_count;
 
                 match (self.handler.clone(), server_state) {
                     // identity mappings
@@ -223,7 +230,7 @@ impl State {
                     (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president, last_chancellor, presidential_nominee}) => {},
                     (HandlerWrapper::Election(_), ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {},
                     (HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler{player_id, president,
-                        chancellor, substate, my_cards: _, cursor_position, selected_policies: _}), 
+                        chancellor, substate, my_cards: _, cursor_position, selected_policies: _, ready: _}), 
                         ServerState::LegislativeSession{president: s_president, chancellor: s_chancellor, substate: s_substate, waiting: s_waiting}) => {
                             if substate != s_substate { // substate change
                                 let selected_policies = match s_substate {
@@ -240,6 +247,7 @@ impl State {
                                     Vec::new(),
                                     0,
                                     selected_policies,
+                                    false,
                                 ));
                             }
                         }, 
@@ -272,6 +280,7 @@ impl State {
                             Vec::new(),
                             0,
                             vec![false, false, false],
+                            false,
                         ));
                     },
                     // todo other state changes

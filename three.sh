@@ -17,7 +17,7 @@ tmux split-window -v $cmd
 tmux select-pane -t 0
 cmd=`echo ${client_command/USER_NAME/markus}`
 tmux split-window -v $cmd
-
+tmux select-pane -t 2
 # for more players use a different window
 #tmux new-window $client_command
 #tmux split-window -h $client_command
