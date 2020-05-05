@@ -19,10 +19,10 @@ fn main() -> std::io::Result<()> {
     let config = common::Configuration::create_from_configfile(args[1].as_str()).unwrap();
 
     // clean start
-    // let game_state = state::GameState::new(config.clone());
+    let game_state = state::GameState::new(config.clone());
 
     // seed game state
-    let game_state = seeds::seed_game_state(config.clone(), "legislative_session");
+    // let game_state = seeds::seed_game_state(config.clone(), "legislative_session");
     // let game_state = seeds::seed_game_state(config.clone(), "nomination");
     
     // TODO save server state regularly

@@ -1,4 +1,7 @@
 // use std::io::prelude::*;
+
+//FIXME there is a bug that sometimes occurs in the client ~" len 0 but index is 0" -> find and fix this
+
 use std::io::{stdout, Write};
 
 use std::net::TcpStream;
