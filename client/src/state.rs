@@ -209,6 +209,7 @@ impl State {
                 ));
 
             },
+            (_, ServerMessage::PolicyUpdate{cards: _}) => {},
             // (HandlerWrapper::IdentityAssignment(_), ServerMessage::StatusUpdate{players}) => {
             //     self.shared.players = players;
             // },

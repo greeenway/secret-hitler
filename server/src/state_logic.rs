@@ -330,6 +330,8 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                         data.shared.current_cards = data.shared.policies_received.clone();
                                         
                                         data.shared.policies_received = Vec::new();
+                                        
+
                                         data.state = ServerState::LegislativeSession {president, chancellor,
                                             substate: LegisationSubState::ChancellorsChoice, waiting: false};
                                         println!("going to chancelorschoice state");
@@ -372,6 +374,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                         data.shared.discard_pile.push(discard_card); // put the remaining card to discard
                                         data.shared.current_cards = data.shared.policies_received.clone();
                                         
+
                                         data.state = ServerState::LegislativeSession {president, chancellor,
                                             substate: LegisationSubState::Done, waiting: false};
                                         println!("chancellor selected a policy");
@@ -395,7 +398,27 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             }
                             if waiting {
                                 // wait for players to get ready...
-                                
+                                let online_count = data.shared.players.iter().
+                                    filter(|player| player.connection_status == ConnectionStatus::Connected).count();
+                                if all_players_ready(data.shared.players.clone()) && online_count >= 1 {// minimum players should be changed to 5
+
+                                    let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
+                                    let next_president_index = (president_index + 1) % data.shared.players.len(); // TODO use number of alive players
+
+                                    data.shared.current_cards = Vec::new();
+                                    data.shared.policies_received = Vec::new();
+                                    data.shared.players = data.shared.players.iter_mut().
+                                            map(|player| {player.ready = false; player.clone()}).collect();
+
+                                    // TODO add fail count to nomination
+                                    data.state = ServerState::Nomination{
+                                        last_president: Some(president),
+                                        last_chancellor: Some(chancellor),
+                                        presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                                    };
+                                    
+                                }
+
                             } else {
                                 match current_cards[0] {
                                     common::PolicyCard::Fascist => data.shared.fascist_policies_count += 1,
@@ -414,6 +437,6 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
         }
 
 
-        thread::sleep(time::Duration::from_millis(2000));
+        thread::sleep(time::Duration::from_millis(500));
     }
 }   
