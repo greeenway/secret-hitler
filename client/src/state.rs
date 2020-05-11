@@ -13,6 +13,7 @@ use crate::identity_assignment;
 use crate::election;
 use crate::nomination;
 use crate::legislative_session;
+use crate::game_over;
 
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -27,6 +28,7 @@ pub enum HandlerWrapper {
     Nomination(nomination::NominationHandler),
     Election(election::ElectionHandler),
     LegislativeSession(legislative_session::LegislativeSessionHandler),
+    GameOver(game_over::GameOverHandler),
 }
 
 impl ActionHandler for HandlerWrapper {
@@ -38,6 +40,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::Nomination(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::Election(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.draw(shared),
+            (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.draw(shared),
             _ => {
                 let _res = queue!(
                     stdout(),
@@ -56,6 +59,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::Nomination(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::Election(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.handle_event(shared, event),
+            (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.handle_event(shared, event),
             _ => {},
         }
     }
@@ -164,7 +168,10 @@ impl State {
                             false,
                         ))
                     },
-                    ServerState::GameOver => {},
+                    ServerState::GameOver{winner} => {
+                       self.handler = HandlerWrapper::GameOver(game_over::GameOverHandler::new(
+                           user_name, winner))
+                    },
                     // _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
                 }
                 self.shared.in_sync = false;
@@ -252,7 +259,8 @@ impl State {
                                 ));
                             }
                         }, 
-                    
+                    (HandlerWrapper::GameOver(_), ServerState::GameOver{winner: _}) => {},
+
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
@@ -282,6 +290,12 @@ impl State {
                             0,
                             vec![false, false, false],
                             false,
+                        ));
+                    },
+                    (_, ServerState::GameOver{winner}) => {
+                        self.handler = HandlerWrapper::GameOver(game_over::GameOverHandler::new(
+                            player_id.unwrap(),
+                            winner,
                         ));
                     },
                     // todo other state changes

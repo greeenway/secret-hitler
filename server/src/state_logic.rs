@@ -7,7 +7,7 @@ use std::time;
 use rand::prelude::*;
 
 extern crate common;
-use common::{ServerMessage, ConnectionStatus, ServerState};
+use common::{ServerMessage, ConnectionStatus, ServerState, PartyMembership};
 use common::LegisationSubState;
 
 pub fn all_players_ready(players: Vec<common::Player>) -> bool {
@@ -26,7 +26,14 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
             println!("{:?}", data.state);
             println!("{:?}", data.shared.players);
 
-
+            // check win conditions
+            if data.shared.fascist_policies_count >= 6 {
+               data.state = ServerState::GameOver{winner: PartyMembership::Fascist};
+            }
+            if data.shared.liberal_policies_count >= 5 {
+                data.state = ServerState::GameOver{winner: PartyMembership::Liberal};
+            }
+            // TODO add more win conditions here
 
             let mut current_players = data.shared.players.clone();
 

@@ -12,6 +12,7 @@ use std::time;
 use std::env;
 use std::sync::{Arc, Mutex};
 
+
 use crossterm::{queue, Result, 
     terminal::{SetSize, size, enable_raw_mode, disable_raw_mode, Clear, ClearType},
     cursor::{MoveTo},
@@ -38,7 +39,7 @@ mod identity_assignment;
 mod nomination;
 mod election;
 mod legislative_session;
-
+mod game_over;
 
 // TODO: refactor main.rs of client into multiple files (per state? at least)
 

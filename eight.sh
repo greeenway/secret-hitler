@@ -37,6 +37,7 @@ tmux select-layout tiled
 
 
 tmux select-pane -t 2
+tmux setw synchronize-panes on
 # for more players use a different window
 #tmux new-window $client_command
 #tmux split-window -h $client_command

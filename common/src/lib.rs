@@ -88,7 +88,7 @@ pub enum ServerState {
     Election {fail_count: u8, presidential_nominee: String, chancellor_nominee: String},
     LegislativeSession {president: String, chancellor: String, substate: LegisationSubState, 
         waiting: bool},
-    GameOver,
+    GameOver{winner: PartyMembership},
 }
 
 
