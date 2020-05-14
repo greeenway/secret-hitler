@@ -3,8 +3,8 @@
 sh_folder='.'
 
 
-tmux kill-session -t three
-tmux new-session -s 'three' -d 'cd '"$sh_folder"'; cargo run --bin server local.yaml;zsh -i'
+tmux kill-session -t secrethitler
+tmux new-session -s 'secrethitler' -d 'cd '"$sh_folder"'; cargo run --bin server local.yaml;zsh -i'
 sleep 0.5 # give server some time to start
 
 
@@ -14,9 +14,20 @@ cmd=`echo ${client_command/USER_NAME/val}`
 tmux split-window -h $cmd
 cmd=`echo ${client_command/USER_NAME/lukas}`
 tmux split-window -v $cmd
-tmux select-pane -t 0
 cmd=`echo ${client_command/USER_NAME/markus}`
 tmux split-window -v $cmd
+tmux select-pane -t 0
+cmd=`echo ${client_command/USER_NAME/andi}`
+tmux split-window -v $cmd
+cmd=`echo ${client_command/USER_NAME/stefan}`
+tmux split-window -v $cmd
+tmux select-pane -t 3
+cmd=`echo ${client_command/USER_NAME/bob}`
+tmux split-window -h $cmd
+
+tmux select-layout tiled
+
+
 tmux select-pane -t 2
 tmux setw synchronize-panes on
 # for more players use a different window

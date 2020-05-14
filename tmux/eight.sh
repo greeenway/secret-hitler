@@ -3,8 +3,8 @@
 sh_folder='.'
 
 
-tmux kill-session -t eight
-tmux new-session -s 'eight' -d 'cd '"$sh_folder"'; cargo run --bin server local.yaml;zsh -i'
+tmux kill-session -t secrethitler
+tmux new-session -s 'eigsecrethitlerht' -d 'cd '"$sh_folder"'; cargo run --bin server local.yaml;zsh -i'
 sleep 0.5 # give server some time to start
 
 

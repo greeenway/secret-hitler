@@ -56,7 +56,7 @@ cargo run --bin client local.yaml
 - [ ] observer state
 - [ ] execution
 - [ ] win condition hitler executed
-- [ ] tmux script for 5-6
+- [x] tmux script for 5-6
 - [ ] beta testing for 5-6
 
 ### Playable for 7-8
