@@ -50,7 +50,7 @@ cargo run --bin client local.yaml
 - [x] win condition
 - [x] game over state
 - [x] policy peek
-- [ ] chaos phase
+- [x] chaos phase
 - [ ] veto power
 - [ ] block players from joining
 - [ ] observer state

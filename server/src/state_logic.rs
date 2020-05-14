@@ -246,7 +246,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
 
                 },
-                ServerState::Election {fail_count: _, presidential_nominee, chancellor_nominee} => {
+                ServerState::Election {election_count, presidential_nominee, chancellor_nominee} => {
                     // TODO wait for ready of all players before moving to next state
                     let number_of_players = data.shared.player_number.unwrap() as usize;
 
@@ -263,6 +263,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 // vote succeeded
                                 println!("vote passed!");
                                 data.shared.votes = None;
+                                data.shared.election_count = 0;
 
                                 // test if chancelor is hitler
                                 if data.shared.fascist_policies_count >= 3 {
@@ -285,19 +286,24 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
                             } else {
                                 // vote failed
-                                // TODO check for chaos -> transition to chaos if fail count is high enough
+                                if election_count >= 3 {
+                                    data.state = ServerState::Chaos{waiting: false, presidential_nominee: presidential_nominee.clone()};
+                                    data.shared.votes = None;
+                                    data.shared.election_count = 0;
+                                    println!("go to chaos");
 
-                                let president_index = data.shared.players.iter().position(|p| p.player_id == presidential_nominee).unwrap();
-                                let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
+                                } else {
+                                    let president_index = data.shared.players.iter().position(|p| p.player_id == presidential_nominee).unwrap();
+                                    let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
 
-                                data.state = ServerState::Nomination{
-                                    last_president: Some(presidential_nominee), 
-                                    last_chancellor: Some(chancellor_nominee), 
-                                    presidential_nominee: data.shared.players[next_president_index].player_id.clone()};
-                                println!("vote failed!");
-                                
-                                data.shared.votes = None;
-
+                                    data.state = ServerState::Nomination{
+                                        last_president: Some(presidential_nominee), 
+                                        last_chancellor: Some(chancellor_nominee), 
+                                        presidential_nominee: data.shared.players[next_president_index].player_id.clone()};
+                                    println!("vote failed!");
+                                    
+                                    data.shared.votes = None;
+                                }
                             }
                         }
                     }
@@ -479,7 +485,6 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                         },
                                     }
 
-                                    // TODO add fail count to nomination
                                     
                                     
                                 }
@@ -532,6 +537,41 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
                     
                 }
+                ServerState::Chaos{waiting, presidential_nominee} => {
+                    if waiting == false {
+                        if data.shared.draw_pile.len() < 1 {
+                            println!("reshuffled draw pile");
+                            let discard = data.shared.discard_pile.clone();
+                            data.shared.draw_pile.extend(discard);
+                            data.shared.discard_pile = Vec::new();
+                        }
+    
+                        // pick policy cards, send policy cards to president
+
+                        let card = data.shared.draw_pile.pop().unwrap(); // this should always work
+                        
+                        match card {
+                            common::PolicyCard::Fascist => data.shared.fascist_policies_count += 1,
+                            common::PolicyCard::Liberal => data.shared.liberal_policies_count += 1,
+                        }
+                        
+                        data.state = ServerState::Chaos{waiting: true, presidential_nominee};
+                    } else {
+                        // wait for ready here then if all ready go to fresh nomination
+                        if all_players_ready(data.shared.players.clone()) {
+                            let number_of_players = data.shared.player_number.unwrap() as usize;
+                            let president_index = data.shared.players.iter().position(|p| p.player_id == presidential_nominee).unwrap();
+                            let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
+
+                            data.state = ServerState::Nomination{last_president: None, last_chancellor: None, presidential_nominee: data.shared.players[next_president_index].player_id.clone()};
+                        
+                            // TODO create function to set all players to not ready
+                            data.shared.players = data.shared.players.iter_mut().
+                            map(|player| {player.ready = false; player.clone()}).collect();
+                        }
+                    }
+                    
+                },
                 _ => {}
             }
 

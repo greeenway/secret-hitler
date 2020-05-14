@@ -41,6 +41,7 @@ mod election;
 mod legislative_session;
 mod game_over;
 mod policy_peek;
+mod chaos;
 
 // TODO: refactor main.rs of client into multiple files (per state? at least)
 

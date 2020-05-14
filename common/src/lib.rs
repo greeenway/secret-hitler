@@ -85,11 +85,12 @@ pub enum ServerState {
     Pregame,
     IdentityAssignment {identities_assigned: bool},
     Nomination {last_president: Option<String>, last_chancellor: Option<String>, presidential_nominee: String},
-    Election {fail_count: u8, presidential_nominee: String, chancellor_nominee: String},
+    Election {election_count: u8, presidential_nominee: String, chancellor_nominee: String},
     LegislativeSession {president: String, chancellor: String, substate: LegisationSubState, 
         waiting: bool},
     GameOver{winner: PartyMembership},
     PolicyPeek{president: String, chancellor: String},
+    Chaos{waiting: bool, presidential_nominee: String},
 }
 
 

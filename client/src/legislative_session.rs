@@ -211,7 +211,6 @@ impl state::ActionHandler for LegislativeSessionHandler {
         }
 
         if self.player_id == self.chancellor && self.substate == common::LegisationSubState::ChancellorsChoice {
-            // TODO select polcies with enter!
             match event {
                 KeyEvent{
                     code: KeyCode::Left,

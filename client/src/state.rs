@@ -15,6 +15,7 @@ use crate::nomination;
 use crate::legislative_session;
 use crate::game_over;
 use crate::policy_peek;
+use crate::chaos;
 
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -30,6 +31,8 @@ pub enum HandlerWrapper {
     LegislativeSession(legislative_session::LegislativeSessionHandler),
     GameOver(game_over::GameOverHandler),
     PolicyPeek(policy_peek::PolicyPeekHandler),
+    Chaos(chaos::ChaosHandler),
+
 }
 
 impl ActionHandler for HandlerWrapper {
@@ -43,6 +46,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::PolicyPeek(inner_handler), true) => inner_handler.draw(shared),
+            (HandlerWrapper::Chaos(inner_handler), true) => inner_handler.draw(shared),
             _ => {
                 let _res = queue!(
                     stdout(),
@@ -63,6 +67,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::PolicyPeek(inner_handler), true) => inner_handler.handle_event(shared, event),
+            (HandlerWrapper::Chaos(inner_handler), true) => inner_handler.handle_event(shared, event),
             _ => {},
         }
     }
@@ -146,10 +151,10 @@ impl State {
                     ServerState::Nomination {last_president: _, last_chancellor: _, presidential_nominee} => {
                         self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(user_name, presidential_nominee));
                     },
-                    ServerState::Election {fail_count, presidential_nominee, chancellor_nominee} => {
+                    ServerState::Election {election_count, presidential_nominee, chancellor_nominee} => {
                         self.handler = HandlerWrapper::Election(election::ElectionHandler::new(
                             user_name,
-                            fail_count,
+                            election_count,
                             Some(presidential_nominee),
                             Some(chancellor_nominee),
                         ))
@@ -178,6 +183,11 @@ impl State {
                     ServerState::PolicyPeek{president, chancellor: _} => {
                         self.handler = HandlerWrapper::PolicyPeek(policy_peek::PolicyPeekHandler::new(
                             user_name, president, Vec::new(), false
+                        ))
+                    },
+                    ServerState::Chaos{waiting: _, presidential_nominee: _} => {
+                        self.handler = HandlerWrapper::Chaos(chaos::ChaosHandler::new(
+                            user_name, false
                         ))
                     },
                     // _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
@@ -249,7 +259,7 @@ impl State {
                     (HandlerWrapper::PreGame(_), ServerState::Pregame) => {},
                     (HandlerWrapper::IdentityAssignment(_), ServerState::IdentityAssignment{identities_assigned: _}) => {},
                     (HandlerWrapper::Nomination(_), ServerState::Nomination{last_president: _, last_chancellor: _, presidential_nominee: _}) => {},
-                    (HandlerWrapper::Election(_), ServerState::Election{fail_count: _, chancellor_nominee: _, presidential_nominee: _}) => {},
+                    (HandlerWrapper::Election(_), ServerState::Election{election_count: _, chancellor_nominee: _, presidential_nominee: _}) => {},
                     (HandlerWrapper::LegislativeSession(legislative_session::LegislativeSessionHandler{player_id, president,
                         chancellor, substate, my_cards: _, cursor_position: _, selected_policies: _, ready: _}), 
                         ServerState::LegislativeSession{president: _, chancellor: _, substate: s_substate, waiting: _}) => {
@@ -274,6 +284,7 @@ impl State {
                         }, 
                     (HandlerWrapper::GameOver(_), ServerState::GameOver{winner: _}) => {},
                     (HandlerWrapper::PolicyPeek(_), ServerState::PolicyPeek{president: _ , chancellor: _}) => {},
+                    (HandlerWrapper::Chaos(_), ServerState::Chaos{waiting: _, presidential_nominee: _}) => {},
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
@@ -285,10 +296,10 @@ impl State {
                     (_, ServerState::Nomination{last_president: _, last_chancellor: _, presidential_nominee}) => {
                         self.handler = HandlerWrapper::Nomination(nomination::NominationHandler::new(player_id.unwrap(), presidential_nominee));
                     },
-                    (_, ServerState::Election{fail_count, chancellor_nominee, presidential_nominee}) => {
+                    (_, ServerState::Election{election_count, chancellor_nominee, presidential_nominee}) => {
                         self.handler = HandlerWrapper::Election(election::ElectionHandler::new(
                             player_id.unwrap(),
-                            fail_count,
+                            election_count,
                             Some(presidential_nominee), 
                             Some(chancellor_nominee)
                         ));
@@ -314,6 +325,11 @@ impl State {
                     (_, ServerState::PolicyPeek{president, chancellor: _}) => {
                         self.handler = HandlerWrapper::PolicyPeek(policy_peek::PolicyPeekHandler::new(
                             player_id.unwrap(), president, Vec::new(), false
+                        ));
+                    },
+                    (_, ServerState::Chaos{waiting: _, presidential_nominee: _}) => {
+                        self.handler = HandlerWrapper::Chaos(chaos::ChaosHandler::new(
+                            player_id.unwrap(), false,
                         ));
                     },
                     // todo other state changes

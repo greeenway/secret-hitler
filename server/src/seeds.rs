@@ -45,7 +45,7 @@ pub fn seed_game_state(config: Configuration, state: &str) -> GameState {
         "election" => {
             let mut game_state = GameState::new(config);
     
-            game_state.state = ServerState::Election{fail_count: 0,
+            game_state.state = ServerState::Election{election_count: 1,
                 presidential_nominee: String::from("lukas"),
                 chancellor_nominee: String::from("val"),
             };

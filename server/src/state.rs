@@ -22,6 +22,7 @@ pub struct SharedState {
     pub policies_received: Vec<common::PolicyCard>,
     pub liberal_policies_count: u8,
     pub fascist_policies_count: u8,
+    pub election_count: u8,
 }
 
 impl SharedState {
@@ -48,6 +49,7 @@ impl SharedState {
             policies_received: Vec::new(),
             liberal_policies_count: 2,
             fascist_policies_count: 2,
+            election_count: 0
         }
     }
 }
@@ -127,9 +129,11 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
             }
         },
         common::ClientMessage::Nominated{chancellor_nominee} => {
+            state.shared.election_count += 1;
+
             match state.state.clone() {
                 ServerState::Nomination{last_president: _, last_chancellor: _, presidential_nominee} => {
-                    state.state = ServerState::Election{fail_count: 0, presidential_nominee, chancellor_nominee}
+                    state.state = ServerState::Election{election_count: state.shared.election_count, presidential_nominee, chancellor_nominee}
                 },
                 _ => {}
             }

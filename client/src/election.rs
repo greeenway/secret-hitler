@@ -15,7 +15,7 @@ use common::VoteState;
 #[derive(PartialEq, Clone, Debug)]
 pub struct ElectionHandler {
     player_id: String,
-    fail_count: u8,
+    election_count: u8,
     last_president: Option<String>,
     last_chancellor: Option<String>,
     selected_vote: VoteState,
@@ -24,10 +24,10 @@ pub struct ElectionHandler {
 
 
 impl ElectionHandler {
-    pub fn new(player_id: String, fail_count: u8, last_president: Option<String>, last_chancellor: Option<String>) -> ElectionHandler {
+    pub fn new(player_id: String, election_count: u8, last_president: Option<String>, last_chancellor: Option<String>) -> ElectionHandler {
         Self {
             player_id,
-            fail_count,
+            election_count,
             last_president,
             last_chancellor,
             selected_vote: VoteState::Ja,
@@ -70,6 +70,9 @@ impl state::ActionHandler for ElectionHandler {
             todo_str,
             cursor::MoveTo(left_margin + 8, 8),
             vote_selection,
+            cursor::MoveTo(left_margin, 10),
+            Print(format!("Election count: {}", self.election_count )),
+            
         );
 
 
