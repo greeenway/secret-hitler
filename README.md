@@ -49,9 +49,8 @@ cargo run --bin client local.yaml
 - [x] enable efficent testing with tmux
 - [x] win condition
 - [x] game over state
-- [ ] policy peek
+- [x] policy peek
 - [ ] chaos phase
-- [ ] investigate loyalty
 - [ ] veto power
 - [ ] block players from joining
 - [ ] observer state

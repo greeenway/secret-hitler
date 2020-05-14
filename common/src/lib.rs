@@ -89,6 +89,7 @@ pub enum ServerState {
     LegislativeSession {president: String, chancellor: String, substate: LegisationSubState, 
         waiting: bool},
     GameOver{winner: PartyMembership},
+    PolicyPeek{president: String, chancellor: String},
 }
 
 

@@ -46,8 +46,8 @@ impl SharedState {
             discard_pile: Vec::new(),
             current_cards: Vec::new(),
             policies_received: Vec::new(),
-            liberal_policies_count: 4,
-            fascist_policies_count: 5,
+            liberal_policies_count: 2,
+            fascist_policies_count: 2,
         }
     }
 }

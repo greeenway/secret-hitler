@@ -14,6 +14,7 @@ use crate::election;
 use crate::nomination;
 use crate::legislative_session;
 use crate::game_over;
+use crate::policy_peek;
 
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -28,6 +29,7 @@ pub enum HandlerWrapper {
     Election(election::ElectionHandler),
     LegislativeSession(legislative_session::LegislativeSessionHandler),
     GameOver(game_over::GameOverHandler),
+    PolicyPeek(policy_peek::PolicyPeekHandler),
 }
 
 impl ActionHandler for HandlerWrapper {
@@ -40,6 +42,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::Election(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.draw(shared),
+            (HandlerWrapper::PolicyPeek(inner_handler), true) => inner_handler.draw(shared),
             _ => {
                 let _res = queue!(
                     stdout(),
@@ -59,6 +62,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::Election(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::LegislativeSession(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.handle_event(shared, event),
+            (HandlerWrapper::PolicyPeek(inner_handler), true) => inner_handler.handle_event(shared, event),
             _ => {},
         }
     }
@@ -168,8 +172,13 @@ impl State {
                         ))
                     },
                     ServerState::GameOver{winner} => {
-                       self.handler = HandlerWrapper::GameOver(game_over::GameOverHandler::new(
+                        self.handler = HandlerWrapper::GameOver(game_over::GameOverHandler::new(
                            user_name, winner))
+                    },
+                    ServerState::PolicyPeek{president, chancellor: _} => {
+                        self.handler = HandlerWrapper::PolicyPeek(policy_peek::PolicyPeekHandler::new(
+                            user_name, president, Vec::new(), false
+                        ))
                     },
                     // _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
                 }
@@ -215,6 +224,11 @@ impl State {
                 ));
 
             },
+            (HandlerWrapper::PolicyPeek(policy_peek::PolicyPeekHandler{president, player_id, next_policies: _, ready}) , ServerMessage::PolicyUpdate{cards}) => {
+                self.handler = HandlerWrapper::PolicyPeek(policy_peek::PolicyPeekHandler::new(
+                    player_id, president, cards, ready
+                ));
+            }, 
             (_, ServerMessage::PolicyUpdate{cards: _}) => {},
             // (HandlerWrapper::IdentityAssignment(_), ServerMessage::StatusUpdate{players}) => {
             //     self.shared.players = players;
@@ -259,7 +273,7 @@ impl State {
                             }
                         }, 
                     (HandlerWrapper::GameOver(_), ServerState::GameOver{winner: _}) => {},
-
+                    (HandlerWrapper::PolicyPeek(_), ServerState::PolicyPeek{president: _ , chancellor: _}) => {},
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
@@ -295,6 +309,11 @@ impl State {
                         self.handler = HandlerWrapper::GameOver(game_over::GameOverHandler::new(
                             player_id.unwrap(),
                             winner,
+                        ));
+                    },
+                    (_, ServerState::PolicyPeek{president, chancellor: _}) => {
+                        self.handler = HandlerWrapper::PolicyPeek(policy_peek::PolicyPeekHandler::new(
+                            player_id.unwrap(), president, Vec::new(), false
                         ));
                     },
                     // todo other state changes

@@ -433,18 +433,54 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
 
                                     let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
                                     let next_president_index = (president_index + 1) % data.shared.players.len(); // TODO use number of alive players
-
+                                    let enacted_policy = data.shared.current_cards[0].clone();
                                     data.shared.current_cards = Vec::new();
                                     data.shared.policies_received = Vec::new();
                                     data.shared.players = data.shared.players.iter_mut().
                                             map(|player| {player.ready = false; player.clone()}).collect();
 
+
+                                    // decided where to go from here 
+                                    // if fascist policy, check if legislative action is next
+                                    match (enacted_policy, data.shared.player_number.unwrap(), data.shared.fascist_policies_count) {
+                                        
+                                        (common::PolicyCard::Fascist, 3, 3) => {
+                                            data.state = ServerState::PolicyPeek{
+                                                president: president,
+                                                chancellor: chancellor,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 5, 3) => {
+                                            data.state = ServerState::PolicyPeek{
+                                                president: president,
+                                                chancellor: chancellor,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 6, 3) => {
+                                            data.state = ServerState::PolicyPeek{
+                                                president: president,
+                                                chancellor: chancellor,
+                                            };
+                                        },
+                                        // otherwise if nothing matches go to nomination
+                                        (common::PolicyCard::Fascist, _, _) => {
+                                            data.state = ServerState::Nomination{
+                                                last_president: Some(president),
+                                                last_chancellor: Some(chancellor),
+                                                presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                                            };
+                                        },
+                                        (common::PolicyCard::Liberal, _, _) => {
+                                            data.state = ServerState::Nomination{
+                                                last_president: Some(president),
+                                                last_chancellor: Some(chancellor),
+                                                presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                                            };
+                                        },
+                                    }
+
                                     // TODO add fail count to nomination
-                                    data.state = ServerState::Nomination{
-                                        last_president: Some(president),
-                                        last_chancellor: Some(chancellor),
-                                        presidential_nominee: data.shared.players[next_president_index].player_id.clone()
-                                    };
+                                    
                                     
                                 }
 
@@ -459,6 +495,42 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             }
                         }
                     }
+                }
+                ServerState::PolicyPeek{president, chancellor: chancellor} => {
+                    let players = data.shared.players.clone();
+                    let p = players.iter().find(|player| player.player_id == president).unwrap();
+
+                    
+                    if data.shared.draw_pile.len() < 3 {
+                        println!("reshuffled draw pile");
+                        let discard = data.shared.discard_pile.clone();
+                        data.shared.draw_pile.extend(discard);
+                        data.shared.discard_pile = Vec::new();
+                    }
+                    let cards_to_send: Vec<&common::PolicyCard> = data.shared.draw_pile.iter().rev().take(3).collect();
+                    let cards_to_send = cards_to_send.iter().map(|&p| (*p).clone()).collect();
+                    data.queue_message(p.thread_id, 
+                        ServerMessage::PolicyUpdate{cards: cards_to_send});
+                    println!("sent policies to president");
+
+                    // if ready...
+                    let p = players.iter().find(|player| player.player_id == president).unwrap();
+                    if p.ready {
+                        let number_of_players = data.shared.player_number.unwrap() as usize;
+
+                        data.shared.players = data.shared.players.iter_mut().
+                        map(|player| {player.ready = false; player.clone()}).collect();
+
+                        let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
+                                let next_president_index = (president_index + 1) % number_of_players;
+
+                        data.state = ServerState::Nomination{
+                            last_president: Some(president),
+                            last_chancellor: Some(chancellor),
+                            presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                        };
+                    }
+                    
                 }
                 _ => {}
             }
