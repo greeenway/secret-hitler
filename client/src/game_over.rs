@@ -1,7 +1,7 @@
 use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
-use crossterm::event::{KeyEvent, KeyCode}; //, KeyCode};
+// use crossterm::event::{KeyEvent, KeyCode}; //, KeyCode};
 use crossterm::style::{style, Color, Attribute};
 
 use crate::state;
@@ -57,6 +57,13 @@ impl state::ActionHandler for GameOverHandler {
             Print(style("=".repeat(72)).with(winner_color)),
         );
 
+        if shared.fascist_policies_count < 6 && self.winner == PartyMembership::Fascist {
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(left_margin, 5),
+                Print("Hitler was elected as chancelor!"),
+            );
+        }
 
         crate::render::display_player_names(&shared, self.player_id.clone());
         crate::render::display_policy_cards(&shared);

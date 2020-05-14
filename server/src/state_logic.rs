@@ -33,6 +33,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
             if data.shared.liberal_policies_count >= 5 {
                 data.state = ServerState::GameOver{winner: PartyMembership::Liberal};
             }
+
             // TODO add more win conditions here
 
             let mut current_players = data.shared.players.clone();
@@ -87,17 +88,22 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             }
                         },
                         Some(common::PartyMembership::Liberal) => {
-                            // hide party membership for liberals
-                            let players_with_hidden_memberships = current_players.clone().iter_mut().map(|player_it| {
-                                if player.player_id != player_it.player_id {
-                                    player_it.is_hitler = None;
-                                    player_it.party_membership = None;
+                            let players = match state {
+                                ServerState::GameOver{winner: _} => data.shared.players.clone(),
+                                _ => {
+                                    // hide party membership for liberals
+                                    current_players.clone().iter_mut().map(|player_it| {
+                                        if player.player_id != player_it.player_id {
+                                            player_it.is_hitler = None;
+                                            player_it.party_membership = None;
+                                        }
+                                        player_it.clone() // why do i need to clone here, rust?
+                                    }).collect()
                                 }
-                                player_it.clone() // why do i need to clone here, rust?
-                            }).collect();
+                            };
                             data.queue_message(
                                 player.thread_id,
-                                ServerMessage::StatusUpdate{players: players_with_hidden_memberships, state: state, player_id: Some(player.player_id),
+                                ServerMessage::StatusUpdate{players: players, state: state, player_id: Some(player.player_id),
                                     liberal_policies_count: liberal_policies_count,
                                     fascist_policies_count: fascist_policies_count,
                                 }
@@ -257,9 +263,25 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 // vote succeeded
                                 println!("vote passed!");
                                 data.shared.votes = None;
-                                data.state = ServerState::LegislativeSession{president: presidential_nominee.clone(), 
-                                    chancellor: chancellor_nominee.clone(), 
-                                    substate: common::LegisationSubState::PresidentsChoice, waiting: false};
+
+                                // test if chancelor is hitler
+                                if data.shared.fascist_policies_count >= 3 {
+                                    let players = data.shared.players.clone();
+                                    let chancellor = players.iter().find(|player| player.player_id == chancellor_nominee).unwrap();
+
+                                    if chancellor.is_hitler.unwrap() {
+                                        data.state = ServerState::GameOver{winner: PartyMembership::Fascist};
+                                    } else {
+                                        data.state = ServerState::LegislativeSession{president: presidential_nominee.clone(), 
+                                        chancellor: chancellor_nominee.clone(), 
+                                        substate: common::LegisationSubState::PresidentsChoice, waiting: false};
+                                    }
+                                } else {
+                                    data.state = ServerState::LegislativeSession{president: presidential_nominee.clone(), 
+                                        chancellor: chancellor_nominee.clone(), 
+                                        substate: common::LegisationSubState::PresidentsChoice, waiting: false};
+                                }
+
 
                             } else {
                                 // vote failed

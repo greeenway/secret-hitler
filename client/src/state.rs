@@ -19,7 +19,6 @@ pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
     fn handle_event(&mut self, shared: &mut SharedState, event: event::KeyEvent);
 }
-
 #[derive(PartialEq, Clone, Debug)]
 pub enum HandlerWrapper {
     LoginScreen(login_screen::LoginScreenHandler),
