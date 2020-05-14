@@ -47,8 +47,8 @@ cargo run --bin client local.yaml
 - [x] legislative session
 - [x] implement policy deck
 - [x] enable efficent testing with tmux
-- [ ] win condition
-- [ ] game over state
+- [x] win condition
+- [x] game over state
 - [ ] policy peek
 - [ ] chaos phase
 - [ ] investigate loyalty
@@ -56,6 +56,7 @@ cargo run --bin client local.yaml
 - [ ] block players from joining
 - [ ] observer state
 - [ ] execution
+- [ ] win condition hitler executed
 - [ ] tmux script for 5-6
 - [ ] beta testing for 5-6
 
