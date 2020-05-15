@@ -116,6 +116,10 @@ impl SharedState {
         }
     }
 
+    pub fn get_active_players(&self) -> Vec<common::Player> {
+        self.players.iter().filter(|p| p.status == common::PlayerState::Alive).cloned().collect()
+    }
+
     pub fn get_player_state(&self, player_id: &String) -> Option<common::PlayerState>{
         if let Some(player) = self.players.iter().find(|player| player.player_id == *player_id) {
             Some(player.status.clone())

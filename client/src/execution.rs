@@ -44,6 +44,7 @@ impl state::ActionHandler for ExecutionHandler {
         );
 
         if !self.executed {
+            let players = shared.get_active_players();
             if self.player_id == self.president {
                 let _res = queue!(
                     stdout(),
@@ -54,21 +55,21 @@ impl state::ActionHandler for ExecutionHandler {
                 );
                 
                 let mut j = 0;
-                for i in 0..shared.players.len() {
-                    if shared.players[i].player_id != self.player_id {
+                for i in 0..players.len() {
+                    if players[i].player_id != self.player_id {
                         if self.selected_index == i as i16 {
                             let _res = queue!(
                                 stdout(),
                                 cursor::MoveTo(left_margin,6+j),
                                 Print(style(format!("execute {}!", 
-                                    shared.players[i].player_id)).with(Color::Red))
+                                    players[i].player_id)).with(Color::Red))
                             );
                         } else {
                             let _res = queue!(
                                 stdout(),
                                 cursor::MoveTo(left_margin,6+j),
                                 Print(format!("        {}!", 
-                                    shared.players[i].player_id))
+                                    players[i].player_id))
                             );
                         }
                         j += 1;
@@ -135,18 +136,19 @@ impl state::ActionHandler for ExecutionHandler {
         }
 
         if !self.executed {
+            let players = shared.get_active_players();
             if self.player_id == self.president {
                 match event {
                 KeyEvent{
                     code: KeyCode::Up,
                     modifiers: _,
                 } => {
-                    let my_player_index = shared.players.iter().position(|player| self.player_id == player.player_id).unwrap();
+                    let my_player_index = players.iter().position(|player| self.player_id == player.player_id).unwrap();
                         
-                    let next_index = (self.selected_index + shared.players.len() as i16) - 1; // make sure it is never negative
-                    let mut next_index = next_index % shared.players.len() as i16;
+                    let next_index = (self.selected_index + players.len() as i16) - 1; // make sure it is never negative
+                    let mut next_index = next_index % players.len() as i16;
                     if next_index == my_player_index as i16{
-                        next_index = ((next_index + shared.players.len() as i16) - 1) % shared.players.len() as i16;
+                        next_index = ((next_index + players.len() as i16) - 1) % players.len() as i16;
                     }
 
                     self.selected_index = next_index;
@@ -155,12 +157,12 @@ impl state::ActionHandler for ExecutionHandler {
                     code: KeyCode::Down,
                     modifiers: _,
                 } => {
-                    let my_player_index = shared.players.iter().position(|player| self.player_id == player.player_id).unwrap();
+                    let my_player_index = players.iter().position(|player| self.player_id == player.player_id).unwrap();
                     let next_index = self.selected_index + 1;
-                    let mut next_index = next_index % shared.players.len() as i16;
+                    let mut next_index = next_index % players.len() as i16;
                     if next_index == my_player_index as i16 {
                         next_index += 1;
-                        next_index = next_index % shared.players.len() as i16;
+                        next_index = next_index % players.len() as i16;
                     }
                     self.selected_index = next_index;
                 },
@@ -169,7 +171,7 @@ impl state::ActionHandler for ExecutionHandler {
                     modifiers: _,
                 } => {
                     shared.outbox.push_back(
-                        common::ClientMessage::Execute{player_id: shared.players[self.selected_index as usize].player_id.clone()}
+                        common::ClientMessage::Execute{player_id: players[self.selected_index as usize].player_id.clone()}
                     );
                 }
                 _ => {},

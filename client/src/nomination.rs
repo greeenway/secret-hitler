@@ -36,8 +36,9 @@ impl state::ActionHandler for NominationHandler {
         let left_margin = 25;
         // TODO find a prettier solution to set the first selected player
         // not pretty to update this here but it is called regularily
+        let players = shared.get_active_players();
         if self.is_president && self.selected_index == None {
-            let my_player_index = shared.players.iter().position(|player| self.player_id == player.player_id).unwrap();
+            let my_player_index = players.iter().position(|player| self.player_id == player.player_id).unwrap();
             if my_player_index == 0 {
                 self.selected_index = Some(1);
             } else {
@@ -63,14 +64,14 @@ impl state::ActionHandler for NominationHandler {
             );
             if let Some(selected_index) = self.selected_index {
                 let mut draw_index = 0;
-                for i in 0..shared.players.len() {
-                    if shared.players[i].player_id != self.player_id {
-                        let mut name = style(shared.players[i].player_id.clone());
+                for i in 0..players.len() {
+                    if players[i].player_id != self.player_id {
+                        let mut name = style(players[i].player_id.clone());
                         if i == selected_index {
                             if !self.voted {
-                                name = style(format!("{} <- ",shared.players[i].player_id.clone())).with(Color::Blue);
+                                name = style(format!("{} <- ",players[i].player_id.clone())).with(Color::Blue);
                             } else {
-                                name = style(format!("{} is your nominee.",shared.players[i].player_id.clone())).with(Color::Green);
+                                name = style(format!("{} is your nominee.",players[i].player_id.clone())).with(Color::Green);
                             }
                             
                         }
@@ -109,6 +110,8 @@ impl state::ActionHandler for NominationHandler {
         // TODO enforce electibility rules
         // check https://secrethitler.io/rules for details
         
+        let players = shared.get_active_players();
+        
         match event {
             
             KeyEvent{
@@ -117,7 +120,7 @@ impl state::ActionHandler for NominationHandler {
             } => {
                 if let Some(s) = self.selected_index {
                     self.voted = true;
-                    let chancellor_nominee = shared.players[s].player_id.clone();
+                    let chancellor_nominee = players[s].player_id.clone();
                     shared.outbox.push_back(common::ClientMessage::Nominated{chancellor_nominee: chancellor_nominee});
                     // TODO can we get stuck if this vote message gets lost? / reconnect?
                 }
@@ -130,12 +133,12 @@ impl state::ActionHandler for NominationHandler {
             } => {
                 if !self.voted {
                     if let Some(selected) = self.selected_index {
-                        let my_player_index = shared.players.iter().position(|player| self.player_id == player.player_id).unwrap();
+                        let my_player_index = players.iter().position(|player| self.player_id == player.player_id).unwrap();
                         
-                        let next_index = (selected + shared.players.len()) - 1; // make sure it is never negative
-                        let mut next_index = next_index % shared.players.len();
+                        let next_index = (selected + players.len()) - 1; // make sure it is never negative
+                        let mut next_index = next_index % players.len();
                         if next_index == my_player_index {
-                            next_index = ((next_index + shared.players.len()) - 1) % shared.players.len();
+                            next_index = ((next_index + players.len()) - 1) % players.len();
                         }
 
                         self.selected_index = Some(next_index);
@@ -149,12 +152,12 @@ impl state::ActionHandler for NominationHandler {
             } => {
                 if !self.voted {
                     if let Some(selected) = self.selected_index {
-                        let my_player_index = shared.players.iter().position(|player| self.player_id == player.player_id).unwrap();
+                        let my_player_index = players.iter().position(|player| self.player_id == player.player_id).unwrap();
                         let next_index = selected + 1;
-                        let mut next_index = next_index % shared.players.len();
+                        let mut next_index = next_index % players.len();
                         if next_index == my_player_index {
                             next_index += 1;
-                            next_index = next_index % shared.players.len();
+                            next_index = next_index % players.len();
                         }
                         self.selected_index = Some(next_index);
                     }

@@ -82,8 +82,9 @@ impl state::ActionHandler for ElectionHandler {
             );
         }
 
-        let number_of_votes = shared.players.iter().filter(|player| player.vote != None).count();
-        let number_of_players = shared.players.len();
+        let players = shared.get_active_players();
+        let number_of_votes = players.iter().filter(|player| player.vote != None).count();
+        let number_of_players = players.len();
 
         let mut i_ja = 3;
         let mut i_nein = 3;
