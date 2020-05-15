@@ -16,6 +16,7 @@ use crate::legislative_session;
 use crate::game_over;
 use crate::policy_peek;
 use crate::chaos;
+use crate::execution;
 
 pub trait ActionHandler {
     fn draw(&mut self, shared: &mut SharedState);
@@ -32,6 +33,7 @@ pub enum HandlerWrapper {
     GameOver(game_over::GameOverHandler),
     PolicyPeek(policy_peek::PolicyPeekHandler),
     Chaos(chaos::ChaosHandler),
+    Execution(execution::ExecutionHandler),
 
 }
 
@@ -47,6 +49,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::PolicyPeek(inner_handler), true) => inner_handler.draw(shared),
             (HandlerWrapper::Chaos(inner_handler), true) => inner_handler.draw(shared),
+            (HandlerWrapper::Execution(inner_handler), true) => inner_handler.draw(shared),
             _ => {
                 let _res = queue!(
                     stdout(),
@@ -68,6 +71,7 @@ impl ActionHandler for HandlerWrapper {
             (HandlerWrapper::GameOver(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::PolicyPeek(inner_handler), true) => inner_handler.handle_event(shared, event),
             (HandlerWrapper::Chaos(inner_handler), true) => inner_handler.handle_event(shared, event),
+            (HandlerWrapper::Execution(inner_handler), true) => inner_handler.handle_event(shared, event),
             _ => {},
         }
     }
@@ -190,6 +194,11 @@ impl State {
                             user_name, false
                         ))
                     },
+                    ServerState::Execution{executed, president, victim, chancellor: _} => {
+                        self.handler = HandlerWrapper::Execution(execution::ExecutionHandler::new(
+                            user_name, false, president, 0, executed, victim
+                        ))
+                    }
                     // _ => println!("unknown state!") //panic!("Reconnect to unknown state {:?}", state),
                 }
                 self.shared.in_sync = false;
@@ -285,6 +294,14 @@ impl State {
                     (HandlerWrapper::GameOver(_), ServerState::GameOver{winner: _}) => {},
                     (HandlerWrapper::PolicyPeek(_), ServerState::PolicyPeek{president: _ , chancellor: _}) => {},
                     (HandlerWrapper::Chaos(_), ServerState::Chaos{waiting: _, presidential_nominee: _}) => {},
+                    (HandlerWrapper::Execution(execution::ExecutionHandler{ready, player_id, selected_index, victim, president, executed}), 
+                        ServerState::Execution{executed: s_executed, president: s_president, victim: s_victim, chancellor: _}) => {
+                        if executed != s_executed {
+                            self.handler = HandlerWrapper::Execution(execution::ExecutionHandler::new(
+                                player_id, false, s_president, 0, s_executed, s_victim
+                            ));
+                        }
+                    },
                         // actual state changes, not restricted, we trust that the server knows what it does
                     (_, ServerState::Pregame) => {
                         self.handler = HandlerWrapper::IdentityAssignment(identity_assignment::IdentityAssignmentHandler::new(player_id.unwrap()));
@@ -332,6 +349,13 @@ impl State {
                             player_id.unwrap(), false,
                         ));
                     },
+
+                    (_, ServerState::Execution{executed, president, chancellor: _, victim}) => {
+                        self.handler = HandlerWrapper::Execution(execution::ExecutionHandler::new(
+                            player_id.unwrap(), false, president, 0, executed, victim
+                        ));
+                    },
+                    
                     // todo other state changes
                     (_, _) => {} // we want to switch states later
                 }

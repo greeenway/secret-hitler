@@ -28,6 +28,7 @@ pub enum ClientMessage {
     Nominated {chancellor_nominee: String},
     Vote { selected: VoteState , player_id: String},
     PolicyResponse {selected_policies: Vec<PolicyCard>},
+    Execute {player_id: String},
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -57,6 +58,7 @@ pub struct Player {
     pub party_membership: Option<PartyMembership>,
     pub is_hitler: Option<bool>,
     pub vote: Option<VoteState>,
+    pub executed: bool,
 }
 
 impl Player {
@@ -69,6 +71,7 @@ impl Player {
             party_membership: None,
             is_hitler: None,
             vote: None,
+            executed: false,
         }
     }
 }
@@ -91,6 +94,7 @@ pub enum ServerState {
     GameOver{winner: PartyMembership},
     PolicyPeek{president: String, chancellor: String},
     Chaos{waiting: bool, presidential_nominee: String},
+    Execution{executed: bool, president: String, chancellor: String, victim: Option<String>},
 }
 
 

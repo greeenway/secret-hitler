@@ -65,6 +65,14 @@ impl state::ActionHandler for GameOverHandler {
             );
         }
 
+        if shared.liberal_policies_count < 5 && self.winner == PartyMembership::Liberal {
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(left_margin, 5),
+                Print("Hitler was executed!"),
+            );
+        }
+
         crate::render::display_player_names(&shared, self.player_id.clone());
         crate::render::display_policy_cards(&shared);
     }

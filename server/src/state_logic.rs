@@ -391,7 +391,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 let players = data.shared.players.clone();
                                 let c = players.iter().find(|player| player.player_id == chancellor).unwrap();
                                 let cards_to_send = data.shared.current_cards.clone();
-
+                            
                                 data.queue_message(c.thread_id, 
                                     ServerMessage::PolicyUpdate{cards: cards_to_send});
 
@@ -414,7 +414,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                             substate: LegisationSubState::Done, waiting: false};
                                         println!("chancellor selected a policy");
                                     },
-                                    _ => panic!("got invalid amount of policies {}", data.shared.policies_received.len()),
+                                    _ => {} // stability over correctness.. panic!("got invalid amount of policies {}", data.shared.policies_received.len()),
                                 }
                             }
                             
@@ -454,6 +454,46 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                             data.state = ServerState::PolicyPeek{
                                                 president: president,
                                                 chancellor: chancellor,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 3, 4) => {
+                                            data.state = ServerState::Execution{
+                                                president,
+                                                chancellor,
+                                                executed: false,
+                                                victim: None,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 5, 4) => {
+                                            data.state = ServerState::Execution{
+                                                president,
+                                                chancellor,
+                                                executed: false,
+                                                victim: None,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 5, 5) => {
+                                            data.state = ServerState::Execution{
+                                                president,
+                                                chancellor,
+                                                executed: false,
+                                                victim: None,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 6, 4) => {
+                                            data.state = ServerState::Execution{
+                                                president,
+                                                chancellor,
+                                                executed: false,
+                                                victim: None,
+                                            };
+                                        },
+                                        (common::PolicyCard::Fascist, 6, 5) => {
+                                            data.state = ServerState::Execution{
+                                                president,
+                                                chancellor,
+                                                executed: false,
+                                                victim: None,
                                             };
                                         },
                                         (common::PolicyCard::Fascist, 5, 3) => {
@@ -501,7 +541,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                         }
                     }
                 }
-                ServerState::PolicyPeek{president, chancellor: chancellor} => {
+                ServerState::PolicyPeek{president, chancellor} => {
                     let players = data.shared.players.clone();
                     let p = players.iter().find(|player| player.player_id == president).unwrap();
 
@@ -572,6 +612,38 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     }
                     
                 },
+                ServerState::Execution{president, victim, executed, chancellor} => {
+                    if executed {
+                        // set executed state of victim here
+                        let victim = victim.unwrap();
+                        let hitler = data.shared.players.iter().find(|player| player.is_hitler.unwrap()).unwrap();
+
+                        if victim == hitler.player_id {
+                            // hitler executed, liberals win
+                            data.state = ServerState::GameOver{winner: PartyMembership::Liberal};
+                        } else {
+                            // executed player was not hitler, just continue with next nomination after players are ready
+                            let online_count = data.shared.players.iter().
+                                    filter(|player| player.connection_status == ConnectionStatus::Connected).count();
+                            if all_players_ready(data.shared.players.clone()) && online_count >= 1 {
+                                let number_of_players = data.shared.player_number.unwrap() as usize;
+                                let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
+                                let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
+
+                                data.shared.players = data.shared.players.iter_mut().
+                                    map(|player| {player.ready = false; player.clone()}).collect();
+
+                                data.state = ServerState::Nomination{
+                                    last_chancellor: Some(chancellor),
+                                    last_president: Some(president),
+                                    presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                                };
+                            }
+                        }
+                    }
+                },
+
+                
                 _ => {}
             }
 

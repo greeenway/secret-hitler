@@ -48,7 +48,7 @@ impl SharedState {
             current_cards: Vec::new(),
             policies_received: Vec::new(),
             liberal_policies_count: 2,
-            fascist_policies_count: 2,
+            fascist_policies_count: 3,
             election_count: 0
         }
     }
@@ -177,6 +177,18 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
         },
         common::ClientMessage::PolicyResponse { selected_policies } => {
             state.shared.policies_received = selected_policies;
+        },
+
+        common::ClientMessage::Execute{ player_id } => {
+            match state.state.clone() {
+                ServerState::Execution{executed: false, victim: None, president, chancellor} => {
+                    let p = state.shared.players.iter().find(|player| player.player_id == president).unwrap();
+                    if id == p.thread_id {
+                        state.state = ServerState::Execution{executed: true, victim: Some(player_id), president, chancellor};
+                    }
+                },
+                _ => {},
+            }
         },
 
         common::ClientMessage::StillAlive => {

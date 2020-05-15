@@ -55,7 +55,7 @@ cargo run --bin client local.yaml
 - [ ] block players from joining
 - [ ] observer state
 - [ ] execution
-- [ ] win condition hitler executed
+- [x] win condition hitler executed
 - [x] tmux script for 5-6
 - [ ] beta testing for 5-6
 
