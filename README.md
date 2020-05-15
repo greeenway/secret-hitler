@@ -52,8 +52,8 @@ cargo run --bin client local.yaml
 - [x] policy peek
 - [x] chaos phase
 - [ ] veto power
-- [ ] block players from joining
-- [ ] observer state
+- [x] block players from joining
+- [x] observer state
 - [x] execution
 - [x] win condition hitler executed
 - [x] tmux script for 5-6

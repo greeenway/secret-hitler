@@ -118,9 +118,19 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
                     state.queue_message(id, ServerMessage::Kicked{reason: String::from("user already logged in")});
                 }
             } else {
-                state.shared.players.push(Player::new(name.clone(), id));
-                state.queue_message(id, 
-                    ServerMessage::Connected { user_name: name });
+                // create a new player
+                if state.state == ServerState::Pregame {
+                    state.shared.players.push(Player::new(name.clone(), id));
+                    state.queue_message(id, 
+                        ServerMessage::Connected { user_name: name });
+                } else {
+                    let mut new_player = Player::new(name.clone(), id);
+                    new_player.status = common::PlayerState::Observer;
+                    state.shared.players.push(new_player);
+                    state.queue_message(id, 
+                        ServerMessage::Connected { user_name: name });
+                }
+                
             }
         },
         common::ClientMessage::Ready{ready} => {

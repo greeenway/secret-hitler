@@ -8,7 +8,11 @@ use common::PartyMembership;
 use common::ConnectionStatus;
 
 pub fn display_player_names(shared: &state::SharedState, player_id: String) {
-    for (rel_line, player) in shared.players.iter().enumerate() {
+    let players = shared.get_players();
+    let player_number = players.len();
+    let observers = shared.get_observers();
+
+    for (rel_line, player) in players.iter().enumerate() {
 
         let mut name_extensions: Vec<String>= Vec::new();
         
@@ -51,7 +55,7 @@ pub fn display_player_names(shared: &state::SharedState, player_id: String) {
 
         
     }
-    if let Some(me) = shared.players.iter().find(|player| player.player_id == player_id) {
+    if let Some(me) = players.iter().find(|player| player.player_id == player_id) {
         let connect_str = match (&me.party_membership, me.is_hitler) {
             (Some(_), Some(_)) => style(", "),
             _ => style(""),
@@ -67,12 +71,42 @@ pub fn display_player_names(shared: &state::SharedState, player_id: String) {
         let _res = queue!(
             stdout(),
             cursor::MoveTo(1, 20),
-            Print(style(player_id).attribute(Attribute::Bold)),
+            Print(style(player_id.clone()).attribute(Attribute::Bold)),
             Print(connect_str),
             Print(role_str),
         );
     }
+
+    let online_observers: Vec<common::Player> = observers.iter().filter(|o| o.connection_status == common::ConnectionStatus::Connected).cloned().collect();
+    
+    if online_observers.len() > 0 {
+        let _res = queue!(
+            stdout(),
+            cursor::MoveTo(1,5+player_number as u16),
+            Print(style("Observers").attribute(Attribute::Bold)),
+        );
+
+        for (rel_line, observer) in online_observers.iter().enumerate() {
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(1,7+player_number as u16 + rel_line as u16),
+                Print(format!("{}", observer.player_id)),
+            );
+
+        }
+    }
+
+    if let Some(me) = observers.iter().find(|player| player.player_id == player_id) {
+        let _res = queue!(
+            stdout(),
+            cursor::MoveTo(1, 20),
+            Print(format!("{}, Observer", me.player_id.clone())),
+        );
+    }
+
 }
+
+
 
 pub fn display_policy_cards(shared: &state::SharedState) {
     let left_margin = 25;
