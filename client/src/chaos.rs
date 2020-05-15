@@ -39,18 +39,21 @@ impl state::ActionHandler for ChaosHandler {
             Print("The top policy card was enacted into law."),
         );
 
-        let ready_string = match self.ready {
-            true => String::from("[ready]"),
-            false => String::from("[press enter if ready]"),
-        };
-
-
-        let _res = queue!(
-            stdout(),
-            cursor::MoveTo(left_margin, 6),
-            Print(ready_string),
-        );
-
+        
+        if shared.is_active(&self.player_id) {
+            let ready_string = match self.ready {
+                true => String::from("[ready]"),
+                false => String::from("[press enter if ready]"),
+            };
+    
+    
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(left_margin, 6),
+                Print(ready_string),
+            );
+        }
+        
 
 
         crate::render::display_player_names(&shared, self.player_id.clone());
@@ -58,6 +61,9 @@ impl state::ActionHandler for ChaosHandler {
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
         match event {
             KeyEvent{
                 code: KeyCode::Enter,

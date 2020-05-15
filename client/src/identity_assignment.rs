@@ -68,56 +68,61 @@ impl state::ActionHandler for IdentityAssignmentHandler {
 
         
 
-
-        if assignment_ready {
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(left_margin,3),
-                Print(format!("Hi {}, your party membership is ", self.player_id)),
-                cursor::MoveTo(left_margin,4),
-                Print(party_membership_string),
-                Print("."),
-                cursor::MoveTo(left_margin,5),
-            );
-
-            if my_player.is_hitler.unwrap() {
+        if shared.is_active(&self.player_id) {  
+            if assignment_ready {
                 let _res = queue!(
                     stdout(),
-                    Print("You are the secret "),
-                    Print(hitler_string),
+                    cursor::MoveTo(left_margin,3),
+                    Print(format!("Hi {}, your party membership is ", self.player_id)),
+                    cursor::MoveTo(left_margin,4),
+                    Print(party_membership_string),
                     Print("."),
+                    cursor::MoveTo(left_margin,5),
+                );
+
+                if my_player.is_hitler.unwrap() {
+                    let _res = queue!(
+                        stdout(),
+                        Print("You are the secret "),
+                        Print(hitler_string),
+                        Print("."),
+                    );
+                }
+
+                let ready_string = match self.ready {
+                    true => String::from("[ready]"),
+                    false => String::from("[press enter if ready]"),
+                };
+        
+        
+                let _res = queue!(
+                    stdout(),
+                    cursor::MoveTo(left_margin,7),
+                    Print(ready_string),
+                );
+                
+
+
+
+            } else {
+                let _res = queue!(
+                    stdout(),
+                    cursor::MoveTo(left_margin,3),
+                    Print("Please await your identity..."),
                 );
             }
 
-            let ready_string = match self.ready {
-                true => String::from("[ready]"),
-                false => String::from("[press enter if ready]"),
-            };
-    
-    
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(left_margin,7),
-                Print(ready_string),
-            );
-            
-
-
-
-        } else {
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(left_margin,3),
-                Print("Please await your identity..."),
-            );
         }
-        
 
         crate::render::display_player_names(&shared, self.player_id.clone());
         crate::render::display_policy_cards(&shared);
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
+
         match event {
             KeyEvent{
                 code: KeyCode::Enter,

@@ -66,15 +66,21 @@ impl state::ActionHandler for ElectionHandler {
             Print(format!("President: {}", self.last_president.clone().unwrap() )),
             cursor::MoveTo(left_margin, 6),
             Print(format!("chancellor: {}", self.last_chancellor.clone().unwrap() )),
-            cursor::MoveTo(left_margin, 8),
-            todo_str,
-            cursor::MoveTo(left_margin + 8, 8),
-            vote_selection,
+            
             cursor::MoveTo(left_margin, 10),
             Print(format!("Election count: {}", self.election_count )),
             
         );
 
+        if shared.is_active(&self.player_id) {
+            let _res = queue!(
+                stdout(),
+                cursor::MoveTo(left_margin, 8),
+                todo_str,
+                cursor::MoveTo(left_margin + 8, 8),
+                vote_selection,
+            );
+        }
 
         let number_of_votes = shared.players.iter().filter(|player| player.vote != None).count();
         let number_of_players = shared.players.len();
@@ -132,6 +138,10 @@ impl state::ActionHandler for ElectionHandler {
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
+
         match event {
             KeyEvent{
                 code: KeyCode::Enter,

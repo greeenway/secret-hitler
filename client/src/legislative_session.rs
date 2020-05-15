@@ -61,41 +61,42 @@ impl state::ActionHandler for LegislativeSessionHandler {
             Print(format!("Chancellor: {:8}", self.chancellor)),
         );
 
-        if self.player_id == self.president && self.my_cards.len() == 3 && self.substate == common::LegisationSubState::PresidentsChoice {
+        if shared.is_active(&self.player_id) {
+            if self.player_id == self.president && self.my_cards.len() == 3 && self.substate == common::LegisationSubState::PresidentsChoice {
 
-            for (i,card) in self.my_cards.iter().enumerate() {
-                let policy_letter = match (self.selected_policies[i], card) {
-                    (true, PolicyCard::Liberal) => style("L").attribute(Attribute::Bold).with(Color::Blue),
-                    (true, PolicyCard::Fascist) => style("F").attribute(Attribute::Bold).with(Color::Red),
-                    (false, PolicyCard::Liberal) => style("L").attribute(Attribute::Bold),
-                    (false, PolicyCard::Fascist) => style("F").attribute(Attribute::Bold),
-                };
+                for (i,card) in self.my_cards.iter().enumerate() {
+                    let policy_letter = match (self.selected_policies[i], card) {
+                        (true, PolicyCard::Liberal) => style("L").attribute(Attribute::Bold).with(Color::Blue),
+                        (true, PolicyCard::Fascist) => style("F").attribute(Attribute::Bold).with(Color::Red),
+                        (false, PolicyCard::Liberal) => style("L").attribute(Attribute::Bold),
+                        (false, PolicyCard::Fascist) => style("F").attribute(Attribute::Bold),
+                    };
+
+                    let _res = queue!(
+                        stdout(),
+                        cursor::MoveTo(left_margin + i as u16 * 6, 5),Print(" ___ "), 
+                        cursor::MoveTo(left_margin + i as u16 * 6, 6),Print("|   |"), 
+                        cursor::MoveTo(left_margin + i as u16 * 6, 7),Print("|   |"),
+                        cursor::MoveTo(left_margin + i as u16 * 6, 8),Print("|___|"), 
+                        cursor::MoveTo(left_margin + i as u16 * 6 + 2, 7),Print(policy_letter),
+                    );
+
+                    let _res = queue!(
+                        stdout(),
+                        cursor::MoveTo(left_margin + self.cursor_position as u16 * 6 + 2, 10),Print("^"),
+                    ); 
+                }
 
                 let _res = queue!(
                     stdout(),
-                    cursor::MoveTo(left_margin + i as u16 * 6, 5),Print(" ___ "), 
-                    cursor::MoveTo(left_margin + i as u16 * 6, 6),Print("|   |"), 
-                    cursor::MoveTo(left_margin + i as u16 * 6, 7),Print("|   |"),
-                    cursor::MoveTo(left_margin + i as u16 * 6, 8),Print("|___|"), 
-                    cursor::MoveTo(left_margin + i as u16 * 6 + 2, 7),Print(policy_letter),
+                    cursor::MoveTo(left_margin+20,6),
+                    Print("Select 2 policies with space,"),
+                    cursor::MoveTo(left_margin+20,7),
+                    Print("confirm by pressing enter."),
                 );
-
-                let _res = queue!(
-                    stdout(),
-                    cursor::MoveTo(left_margin + self.cursor_position as u16 * 6 + 2, 10),Print("^"),
-                ); 
             }
 
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(left_margin+20,6),
-                Print("Select 2 policies with space,"),
-                cursor::MoveTo(left_margin+20,7),
-                Print("confirm by pressing enter."),
-            );
-        }
-
-        if self.player_id == self.chancellor && self.my_cards.len() == 2 && self.substate == common::LegisationSubState::ChancellorsChoice {
+            if self.player_id == self.chancellor && self.my_cards.len() == 2 && self.substate == common::LegisationSubState::ChancellorsChoice {
 
             for (i,card) in self.my_cards.iter().enumerate() {
                 let policy_letter = match (self.selected_policies[i], card) {
@@ -126,6 +127,7 @@ impl state::ActionHandler for LegislativeSessionHandler {
                 Print("Press enter to enact policy."),
             );
         }
+        }
 
         if self.substate == common::LegisationSubState::Done {
             // style("Liberal").attribute(Attribute::Bold).with(Color::Blue)
@@ -144,17 +146,20 @@ impl state::ActionHandler for LegislativeSessionHandler {
                     Print(" policy was enacted."),
                 );
 
-                let ready_string = match self.ready {
-                    true => String::from("[ready]"),
-                    false => String::from("[press enter if ready]"),
-                };
-        
-        
-                let _res = queue!(
-                    stdout(),
-                    cursor::MoveTo(left_margin,8),
-                    Print(ready_string),
-                );
+                if shared.is_active(&self.player_id) {
+                    
+                    let ready_string = match self.ready {
+                        true => String::from("[ready]"),
+                        false => String::from("[press enter if ready]"),
+                    };
+            
+            
+                    let _res = queue!(
+                        stdout(),
+                        cursor::MoveTo(left_margin,8),
+                        Print(ready_string),
+                    );
+                }
             }
         }
 
@@ -164,6 +169,10 @@ impl state::ActionHandler for LegislativeSessionHandler {
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
+
         if self.player_id == self.president && self.substate == common::LegisationSubState::PresidentsChoice {
             match event {
                 KeyEvent{

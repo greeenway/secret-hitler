@@ -110,17 +110,18 @@ impl state::ActionHandler for ExecutionHandler {
                 }
             }
 
-
-            let ready_string = match self.ready {
+            if shared.is_active(&self.player_id) {
+                let ready_string = match self.ready {
                     true => String::from("[ready]"),
                     false => String::from("[press enter if ready]"),
                 };
         
-            let _res = queue!(
-                stdout(),
-                cursor::MoveTo(left_margin, 10),
-                Print(ready_string),
-            );
+                let _res = queue!(
+                    stdout(),
+                    cursor::MoveTo(left_margin, 10),
+                    Print(ready_string),
+                );
+            }
         }
 
 
@@ -129,6 +130,10 @@ impl state::ActionHandler for ExecutionHandler {
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
+
         if !self.executed {
             if self.player_id == self.president {
                 match event {

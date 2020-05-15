@@ -103,11 +103,14 @@ impl state::ActionHandler for NominationHandler {
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
-        
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
         // TODO enforce electibility rules
         // check https://secrethitler.io/rules for details
         
         match event {
+            
             KeyEvent{
                 code: KeyCode::Enter,
                 modifiers: _,

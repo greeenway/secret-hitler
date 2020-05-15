@@ -97,6 +97,9 @@ impl state::ActionHandler for PolicyPeekHandler {
     }
 
     fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+        if !shared.is_active(&self.player_id) {
+            return;
+        }
         match event {
             KeyEvent{
                 code: KeyCode::Enter,

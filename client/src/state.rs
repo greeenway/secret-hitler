@@ -116,11 +116,18 @@ impl SharedState {
         }
     }
 
-    pub fn get_player_state(self, player_id: String) -> Option<common::PlayerState>{
-        if let Some(player) = self.players.iter().find(|player| player.player_id == player_id) {
+    pub fn get_player_state(&self, player_id: &String) -> Option<common::PlayerState>{
+        if let Some(player) = self.players.iter().find(|player| player.player_id == *player_id) {
             Some(player.status.clone())
         } else {
             None
+        }
+    }
+
+    pub fn is_active(&self, player_id: &String) -> bool {
+        match self.get_player_state(player_id) {
+            Some(common::PlayerState::Alive) => true,
+            _ => false
         }
     }
 }
