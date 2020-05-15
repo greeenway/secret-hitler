@@ -14,11 +14,12 @@ pub fn display_player_names(shared: &state::SharedState, player_id: String) {
         
         // determine party membership string
         if let Some(membership) = player.party_membership.clone() {
-            match (membership, player.is_hitler.unwrap()) {
-                (PartyMembership::Fascist, true) => name_extensions.push(String::from("[H]")),
-                (PartyMembership::Fascist, false) => name_extensions.push(String::from("[F]")),
-                (PartyMembership::Liberal, false) => name_extensions.push(String::from("[L]")),
-                _ => panic!("This should never happen: Hitler is a liberal..."),
+            match (membership, player.is_hitler.unwrap(), player.status.clone()) {
+                (_, _, common::PlayerState::Observer) => name_extensions.push(String::from("obs")),
+                (PartyMembership::Fascist, true, _) => name_extensions.push(String::from("[H]")),
+                (PartyMembership::Fascist, false, _) => name_extensions.push(String::from("[F]")),
+                (PartyMembership::Liberal, false, _) => name_extensions.push(String::from("[L]")),
+                _ => panic!("This should never happen: Hitler is a liberal... or something else happened?"),
             }
         }
 
@@ -27,6 +28,12 @@ pub fn display_player_names(shared: &state::SharedState, player_id: String) {
             (ConnectionStatus::Connected, true) => name_extensions.push(String::from("(ready)")),
             (ConnectionStatus::Connected, false) => {},
             (ConnectionStatus::Disconnected, _) => name_extensions.push(String::from("(disc)")),
+        }
+
+        match player.status {
+            common::PlayerState::Alive => {},
+            common::PlayerState::Dead => {name_extensions.push(String::from("(dead)"))}
+            _ => {}
         }
 
         let mut player_str = format!("{:8}", player.player_id);
@@ -55,6 +62,7 @@ pub fn display_player_names(shared: &state::SharedState, player_id: String) {
             (Some(common::PartyMembership::Liberal), Some(false)) => style("Liberal").with(Color::Blue),
             _ => style(""),
         };
+
     
         let _res = queue!(
             stdout(),

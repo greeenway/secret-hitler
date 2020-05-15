@@ -50,6 +50,14 @@ pub enum ConnectionStatus {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum PlayerState {
+    Alive,
+    Dead,
+    Observer
+}
+
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Player {
     pub player_id: String,
     pub connection_status: ConnectionStatus,
@@ -58,7 +66,7 @@ pub struct Player {
     pub party_membership: Option<PartyMembership>,
     pub is_hitler: Option<bool>,
     pub vote: Option<VoteState>,
-    pub executed: bool,
+    pub status: PlayerState,
 }
 
 impl Player {
@@ -71,7 +79,7 @@ impl Player {
             party_membership: None,
             is_hitler: None,
             vote: None,
-            executed: false,
+            status: PlayerState::Alive,
         }
     }
 }

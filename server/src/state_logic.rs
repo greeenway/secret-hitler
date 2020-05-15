@@ -616,7 +616,12 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     if executed {
                         // set executed state of victim here
                         let victim = victim.unwrap();
+                        let victim_player = data.
+                            shared.players.iter_mut().find(|player| player.player_id == victim).unwrap();
+                        victim_player.status = common::PlayerState::Dead;
+
                         let hitler = data.shared.players.iter().find(|player| player.is_hitler.unwrap()).unwrap();
+
 
                         if victim == hitler.player_id {
                             // hitler executed, liberals win

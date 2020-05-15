@@ -81,7 +81,7 @@ impl state::ActionHandler for ExecutionHandler {
                     cursor::MoveTo(left_margin,3),
                     Print("A fascist policy was passed. Please wait"),
                     cursor::MoveTo(left_margin,4),
-                    Print(format!("until President {}executes a player.", self.president)),
+                    Print(format!("until President {} executes a player.", self.president)),
                 );
             }
         } else {

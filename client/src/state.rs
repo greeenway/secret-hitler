@@ -115,6 +115,14 @@ impl SharedState {
             fascist_policies_count: 0,
         }
     }
+
+    pub fn get_player_state(self, player_id: String) -> Option<common::PlayerState>{
+        if let Some(player) = self.players.iter().find(|player| player.player_id == player_id) {
+            Some(player.status.clone())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug)]
