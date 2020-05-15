@@ -42,7 +42,10 @@ impl state::ActionHandler for LoginScreenHandler {
                 code: KeyCode::Char(c),
                 modifiers: _,
             } => {
-                self.input = format!("{}{}", self.input, c);
+                if self.input.len() <= 7 { // limit to 8 characters, client side should be enough because it is only asthetic
+                    self.input = format!("{}{}", self.input, c);
+                }
+                
             }
             KeyEvent{
                 code: KeyCode::Backspace,
