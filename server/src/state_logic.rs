@@ -11,11 +11,29 @@ use common::{ServerMessage, ConnectionStatus, ServerState, PartyMembership};
 use common::LegisationSubState;
 
 pub fn all_players_ready(players: Vec<common::Player>) -> bool {
-    let ready_count = players.iter().filter(|player| player.ready == true).count();
-    let online_count = players.iter().
-        filter(|player| player.connection_status == ConnectionStatus::Connected).count();
-    (ready_count == online_count)
+    let ready_count = players.iter().filter(|player| player.ready == true ).count();
+    let relevant_count = players.iter().
+        filter(|player| 
+            (player.connection_status == ConnectionStatus::Connected) &&
+            (player.status == common::PlayerState::Alive)
+    
+    ).count();
+    (ready_count >= relevant_count)
 }
+
+fn get_next_president_index(president_id: String, players: &Vec<common::Player>) -> usize {
+    let president_index = players.iter().position(|p| p.player_id == president_id).unwrap();
+    let mut next_president_index = president_index;
+    loop {
+        next_president_index = (next_president_index + 1) % players.len();
+        match players[next_president_index].status { // only select alive presidents ...
+            common::PlayerState::Alive => { return next_president_index },
+            _ => {}
+        }
+    }
+}
+
+
 
 pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Result<()> {
     loop {
@@ -248,18 +266,23 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                 },
                 ServerState::Election {election_count, presidential_nominee, chancellor_nominee} => {
                     // TODO wait for ready of all players before moving to next state
-                    let number_of_players = data.shared.player_number.unwrap() as usize;
+                    let number_active_players = data.shared.players.iter().
+                            filter(|player| 
+                                (player.connection_status == ConnectionStatus::Connected) &&
+                                (player.status == common::PlayerState::Alive)
+                        
+                        ).count();
 
                     if let Some(votes) = data.shared.votes.clone() {
                         let voted_count = votes.len();
-                        let vote_complete = voted_count == number_of_players;
+                        let vote_complete = voted_count == number_active_players;
 
                         if vote_complete {
                             let ja_votes = votes.values()
                             .filter(|&vote| vote == &common::VoteState::Ja).count();
                             println!("{}/{}", ja_votes, votes.len());
 
-                            if ja_votes > (number_of_players - ja_votes) {
+                            if ja_votes > (number_active_players - ja_votes) {
                                 // vote succeeded
                                 println!("vote passed!");
                                 data.shared.votes = None;
@@ -293,9 +316,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                     println!("go to chaos");
 
                                 } else {
-                                    let president_index = data.shared.players.iter().position(|p| p.player_id == presidential_nominee).unwrap();
-                                    let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
-
+                                    let next_president_index = get_next_president_index(presidential_nominee.clone(), &data.shared.players);
                                     data.state = ServerState::Nomination{
                                         last_president: Some(presidential_nominee), 
                                         last_chancellor: Some(chancellor_nominee), 
@@ -436,9 +457,9 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 let online_count = data.shared.players.iter().
                                     filter(|player| player.connection_status == ConnectionStatus::Connected).count();
                                 if all_players_ready(data.shared.players.clone()) && online_count >= 1 {// minimum players should be changed to 5
-
-                                    let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
-                                    let next_president_index = (president_index + 1) % data.shared.players.len(); // TODO use number of alive players
+                                    
+                                    let next_president_index = get_next_president_index(president.clone(), &data.shared.players);
+                                    
                                     let enacted_policy = data.shared.current_cards[0].clone();
                                     data.shared.current_cards = Vec::new();
                                     data.shared.policies_received = Vec::new();
@@ -561,13 +582,11 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     // if ready...
                     let p = players.iter().find(|player| player.player_id == president).unwrap();
                     if p.ready {
-                        let number_of_players = data.shared.player_number.unwrap() as usize;
 
                         data.shared.players = data.shared.players.iter_mut().
                         map(|player| {player.ready = false; player.clone()}).collect();
 
-                        let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
-                                let next_president_index = (president_index + 1) % number_of_players;
+                        let next_president_index = get_next_president_index(president.clone(), &data.shared.players);
 
                         data.state = ServerState::Nomination{
                             last_president: Some(president),
@@ -599,9 +618,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                     } else {
                         // wait for ready here then if all ready go to fresh nomination
                         if all_players_ready(data.shared.players.clone()) {
-                            let number_of_players = data.shared.player_number.unwrap() as usize;
-                            let president_index = data.shared.players.iter().position(|p| p.player_id == presidential_nominee).unwrap();
-                            let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
+                            let next_president_index = get_next_president_index(presidential_nominee.clone(), &data.shared.players);
 
                             data.state = ServerState::Nomination{last_president: None, last_chancellor: None, presidential_nominee: data.shared.players[next_president_index].player_id.clone()};
                         
@@ -631,9 +648,7 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             let online_count = data.shared.players.iter().
                                     filter(|player| player.connection_status == ConnectionStatus::Connected).count();
                             if all_players_ready(data.shared.players.clone()) && online_count >= 1 {
-                                let number_of_players = data.shared.player_number.unwrap() as usize;
-                                let president_index = data.shared.players.iter().position(|p| p.player_id == president).unwrap();
-                                let next_president_index = (president_index + 1) % number_of_players; // TODO use number of alive players
+                                let next_president_index = get_next_president_index(president.clone(), &data.shared.players);
 
                                 data.shared.players = data.shared.players.iter_mut().
                                     map(|player| {player.ready = false; player.clone()}).collect();
