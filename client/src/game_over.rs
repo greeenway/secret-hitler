@@ -77,7 +77,7 @@ impl state::ActionHandler for GameOverHandler {
         crate::render::display_policy_cards(&shared);
     }
 
-    fn handle_event(&mut self, shared: &mut state::SharedState, event: event::KeyEvent) {
+    fn handle_event(&mut self, _: &mut state::SharedState, _: event::KeyEvent) {
         // match event {
         //     KeyEvent{
         //         code: KeyCode::Enter,

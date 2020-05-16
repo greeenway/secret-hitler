@@ -2,10 +2,9 @@ use std::io::{stdout, Write};
 use crossterm::{event, queue, cursor};
 use crossterm::style::{Print};
 use crossterm::event::{KeyEvent, KeyCode}; //, KeyCode};
-use crossterm::style::{style, Color, Attribute};
+use crossterm::style::{style, Attribute};
 
 use crate::state;
-use common::PartyMembership;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct ChaosHandler {

@@ -323,7 +323,7 @@ impl State {
                     (HandlerWrapper::GameOver(_), ServerState::GameOver{winner: _}) => {},
                     (HandlerWrapper::PolicyPeek(_), ServerState::PolicyPeek{president: _ , chancellor: _}) => {},
                     (HandlerWrapper::Chaos(_), ServerState::Chaos{waiting: _, presidential_nominee: _}) => {},
-                    (HandlerWrapper::Execution(execution::ExecutionHandler{ready, player_id, selected_index, victim, president, executed}), 
+                    (HandlerWrapper::Execution(execution::ExecutionHandler{ready: _, player_id, selected_index: _, victim: _, president:_, executed}), 
                         ServerState::Execution{executed: s_executed, president: s_president, victim: s_victim, chancellor: _}) => {
                         if executed != s_executed {
                             self.handler = HandlerWrapper::Execution(execution::ExecutionHandler::new(
@@ -384,9 +384,7 @@ impl State {
                             player_id.unwrap(), false, president, 0, executed, victim
                         ));
                     },
-                    
-                    // todo other state changes
-                    (_, _) => {} // we want to switch states later
+
                 }
             },
 

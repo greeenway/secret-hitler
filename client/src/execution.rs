@@ -5,7 +5,7 @@ use crossterm::event::{KeyEvent, KeyCode}; //, KeyCode};
 use crossterm::style::{style, Color, Attribute};
 
 use crate::state;
-use common::PartyMembership;
+// use common::PartyMembership;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct ExecutionHandler {
