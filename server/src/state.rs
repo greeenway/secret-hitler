@@ -179,6 +179,7 @@ pub fn update_state(state: &mut crate::state::GameState, message: common::Client
             if state.shared.votes == None {
                 state.shared.votes = Some(HashMap::new());
             }
+            println!("I got a vote from {}", player_id);
             if state.shared.votes != None { // this should always be true...
                 let mut votes = state.shared.votes.clone().unwrap();
                 votes.insert( player_id, selected); // TODO: find a better way, than creating the hashmap again...

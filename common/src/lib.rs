@@ -17,6 +17,7 @@ pub enum VoteState {
     Ja,
     Nein,
 }
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub enum ClientMessage {
     Hello,
@@ -88,6 +89,7 @@ impl Player {
 pub enum LegisationSubState {
     PresidentsChoice,
     ChancellorsChoice,
+    VetoPower,
     Done,
 }
 

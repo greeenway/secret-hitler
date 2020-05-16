@@ -430,10 +430,16 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                         data.shared.discard_pile.push(discard_card); // put the remaining card to discard
                                         data.shared.current_cards = data.shared.policies_received.clone();
                                         
+                                        if data.shared.fascist_policies_count < 5 {
+                                            data.state = ServerState::LegislativeSession {president, chancellor,
+                                                substate: LegisationSubState::Done, waiting: false};
+                                            println!("chancellor selected a policy");
+                                        } else {
+                                            // veto power
+                                            data.state = ServerState::LegislativeSession{president, chancellor,
+                                                substate: LegisationSubState::VetoPower, waiting: false};
+                                        }
 
-                                        data.state = ServerState::LegislativeSession {president, chancellor,
-                                            substate: LegisationSubState::Done, waiting: false};
-                                        println!("chancellor selected a policy");
                                     },
                                     _ => {} // stability over correctness.. panic!("got invalid amount of policies {}", data.shared.policies_received.len()),
                                 }
@@ -442,6 +448,97 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                             // wait for policy respone
                             // put remaining card to discard pile
                             // enact policy -> there should be some kind of a win condition check here eventually
+                        },
+                        LegisationSubState::VetoPower => {
+                            if waiting == false {
+                                let players = data.shared.players.clone();
+                                let government: Vec<common::Player> = players.iter().filter(|player| 
+                                    player.player_id == chancellor || player.player_id == president).cloned().collect();
+                                let cards_to_send = data.shared.current_cards.clone();
+                                
+                                for gov in government {
+                                    data.queue_message(gov.thread_id, 
+                                        ServerMessage::PolicyUpdate{cards: cards_to_send.clone()});
+                                }
+
+                                data.state = ServerState::LegislativeSession {president, chancellor,
+                                    substate: LegisationSubState::VetoPower, waiting: true};
+                                
+                            } else {
+                                let players = data.shared.players.clone();
+                                let government: Vec<common::Player> = players.iter().filter(|player| 
+                                    player.player_id == chancellor || player.player_id == president).cloned().collect();
+                                let cards_to_send = data.shared.current_cards.clone();
+                                
+                                for gov in government {
+                                    data.queue_message(gov.thread_id, 
+                                        ServerMessage::PolicyUpdate{cards: cards_to_send.clone()});
+                                }
+
+                                // find out if veto passed or not
+                                // map votes to players values if present
+                                let mut veto_passed = None;
+
+                                println!("{:?}", data.shared.votes);
+                                
+                                if data.shared.votes != None {
+                                    current_players = current_players.iter_mut().
+                                    map(|player| {
+                                        // if player.player_id
+                                        match data.shared.votes.clone().unwrap().get(&player.player_id) {
+                                            Some(vote) => {player.vote = Some(vote.clone()); player.clone()},
+                                            None => {player.vote = None; player.clone()},
+                                        }
+                                    }).collect();
+                                    let government: Vec<common::Player> = current_players.iter().filter(|player| 
+                                        player.player_id == chancellor || player.player_id == president).cloned().collect();
+                                    
+                                    println!("got {} votes!", government.len());
+                                    if government.len() == 2 {
+                                        println!("got 2 votes!");
+                                        match (government[0].vote.clone(), government[1].vote.clone()) {
+                                            (None, _) => {println!("1 voted");}, // vote not done
+                                            (_, None) => {println!("1 voted");}, // vote not done
+                                            (Some(v1), Some(v2)) => {
+                                                if v1 == v2 && v1 == common::VoteState::Nein {
+                                                    veto_passed = Some(true); 
+                                                } else {
+                                                    veto_passed = Some(false);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // reset veto votes?
+
+                                if let Some(veto_passed) = veto_passed {
+                                    println!("vote done");
+                                    if veto_passed { // veto passes
+                                        // discard cards to discard pile
+    
+                                        let discard_card = data.shared.current_cards[0].clone();
+                                        data.shared.discard_pile.push(discard_card);
+    
+                                        data.shared.election_count += 1;
+                                        println!("policy was vetoed");
+    
+                                        data.shared.current_cards = Vec::new();
+                                        data.shared.policies_received = Vec::new();
+                                        data.shared.players = data.shared.players.iter_mut().
+                                                map(|player| {player.ready = false; player.clone()}).collect();
+                                        
+                                        data.state = ServerState::LegislativeSession {president, chancellor,
+                                            substate: LegisationSubState::Done, waiting: false};
+    
+                                    } else { // no veto -> move to legislative state done
+                                        data.state = ServerState::LegislativeSession {president, chancellor,
+                                            substate: LegisationSubState::Done, waiting: false};
+                                        println!("no veto -> policy passed");
+                                    }
+                                }
+                                
+                            }
                         },
                         LegisationSubState::Done => {
                             // wait for players to get ready
@@ -456,104 +553,123 @@ pub fn handle_state(data: Arc<Mutex<crate::state::GameState>>) -> std::io::Resul
                                 // wait for players to get ready...
                                 let online_count = data.shared.players.iter().
                                     filter(|player| player.connection_status == ConnectionStatus::Connected).count();
+                                println!("waiting state, cards currently: {}", data.shared.current_cards.len());
                                 if all_players_ready(data.shared.players.clone()) && online_count >= 1 {// minimum players should be changed to 5
                                     
                                     let next_president_index = get_next_president_index(president.clone(), &data.shared.players);
-                                    
-                                    let enacted_policy = data.shared.current_cards[0].clone();
-                                    data.shared.current_cards = Vec::new();
-                                    data.shared.policies_received = Vec::new();
-                                    data.shared.players = data.shared.players.iter_mut().
+                                    let pres_later = president.clone();
+                                    let chanc_later = chancellor.clone();
+                                    if data.shared.current_cards.len() > 0 {
+                                        let enacted_policy = data.shared.current_cards[0].clone();
+                                        data.shared.current_cards = Vec::new();
+                                        data.shared.policies_received = Vec::new();
+                                        data.shared.players = data.shared.players.iter_mut().
+                                                map(|player| {player.ready = false; player.clone()}).collect();
+
+                                         // decided where to go from here 
+                                        // if fascist policy, check if legislative action is next
+
+                                        //FIXME can't go to executive powers here?!?
+                                        match (enacted_policy, data.shared.player_number.unwrap(), data.shared.fascist_policies_count) {
+                                            
+                                            (common::PolicyCard::Fascist, 3, 3) => {
+                                                data.state = ServerState::PolicyPeek{
+                                                    president: president,
+                                                    chancellor: chancellor,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 3, 4) => {
+                                                data.state = ServerState::Execution{
+                                                    president,
+                                                    chancellor,
+                                                    executed: false,
+                                                    victim: None,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 5, 4) => {
+                                                data.state = ServerState::Execution{
+                                                    president,
+                                                    chancellor,
+                                                    executed: false,
+                                                    victim: None,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 5, 5) => {
+                                                data.state = ServerState::Execution{
+                                                    president,
+                                                    chancellor,
+                                                    executed: false,
+                                                    victim: None,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 6, 4) => {
+                                                data.state = ServerState::Execution{
+                                                    president,
+                                                    chancellor,
+                                                    executed: false,
+                                                    victim: None,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 6, 5) => {
+                                                data.state = ServerState::Execution{
+                                                    president,
+                                                    chancellor,
+                                                    executed: false,
+                                                    victim: None,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 5, 3) => {
+                                                data.state = ServerState::PolicyPeek{
+                                                    president: president,
+                                                    chancellor: chancellor,
+                                                };
+                                            },
+                                            (common::PolicyCard::Fascist, 6, 3) => {
+                                                data.state = ServerState::PolicyPeek{
+                                                    president: president,
+                                                    chancellor: chancellor,
+                                                };
+                                            },
+                                            // otherwise if nothing matches go to nomination
+                                            (common::PolicyCard::Fascist, _, _) => {
+                                                data.state = ServerState::Nomination{
+                                                    last_president: Some(president),
+                                                    last_chancellor: Some(chancellor),
+                                                    presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                                                };
+                                            },
+                                            (common::PolicyCard::Liberal, _, _) => {
+                                                data.state = ServerState::Nomination{
+                                                    last_president: Some(president),
+                                                    last_chancellor: Some(chancellor),
+                                                    presidential_nominee: data.shared.players[next_president_index].player_id.clone()
+                                                };
+                                            },
+                                        }
+
+                                    } else {
+                                        data.shared.current_cards = Vec::new();
+                                        data.shared.policies_received = Vec::new();
+                                        data.shared.players = data.shared.players.iter_mut().
                                             map(|player| {player.ready = false; player.clone()}).collect();
-
-
-                                    // decided where to go from here 
-                                    // if fascist policy, check if legislative action is next
-                                    match (enacted_policy, data.shared.player_number.unwrap(), data.shared.fascist_policies_count) {
                                         
-                                        (common::PolicyCard::Fascist, 3, 3) => {
-                                            data.state = ServerState::PolicyPeek{
-                                                president: president,
-                                                chancellor: chancellor,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 3, 4) => {
-                                            data.state = ServerState::Execution{
-                                                president,
-                                                chancellor,
-                                                executed: false,
-                                                victim: None,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 5, 4) => {
-                                            data.state = ServerState::Execution{
-                                                president,
-                                                chancellor,
-                                                executed: false,
-                                                victim: None,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 5, 5) => {
-                                            data.state = ServerState::Execution{
-                                                president,
-                                                chancellor,
-                                                executed: false,
-                                                victim: None,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 6, 4) => {
-                                            data.state = ServerState::Execution{
-                                                president,
-                                                chancellor,
-                                                executed: false,
-                                                victim: None,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 6, 5) => {
-                                            data.state = ServerState::Execution{
-                                                president,
-                                                chancellor,
-                                                executed: false,
-                                                victim: None,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 5, 3) => {
-                                            data.state = ServerState::PolicyPeek{
-                                                president: president,
-                                                chancellor: chancellor,
-                                            };
-                                        },
-                                        (common::PolicyCard::Fascist, 6, 3) => {
-                                            data.state = ServerState::PolicyPeek{
-                                                president: president,
-                                                chancellor: chancellor,
-                                            };
-                                        },
-                                        // otherwise if nothing matches go to nomination
-                                        (common::PolicyCard::Fascist, _, _) => {
-                                            data.state = ServerState::Nomination{
-                                                last_president: Some(president),
-                                                last_chancellor: Some(chancellor),
-                                                presidential_nominee: data.shared.players[next_president_index].player_id.clone()
-                                            };
-                                        },
-                                        (common::PolicyCard::Liberal, _, _) => {
-                                            data.state = ServerState::Nomination{
-                                                last_president: Some(president),
-                                                last_chancellor: Some(chancellor),
-                                                presidential_nominee: data.shared.players[next_president_index].player_id.clone()
-                                            };
-                                        },
+                                            data.state = ServerState::Nomination {last_president: Some(pres_later.clone()),
+                                            last_chancellor: Some(chanc_later.clone()),
+                                            presidential_nominee: data.shared.players[next_president_index].player_id.clone()};
                                     }
 
+                                    
                                     
                                     
                                 }
 
                             } else {
-                                match current_cards[0] {
-                                    common::PolicyCard::Fascist => data.shared.fascist_policies_count += 1,
-                                    common::PolicyCard::Liberal => data.shared.liberal_policies_count += 1,
+                                if data.shared.current_cards.len() > 0 {
+                                    // this should 0 if a veto was used before
+                                    match current_cards[0] {
+                                        common::PolicyCard::Fascist => data.shared.fascist_policies_count += 1,
+                                        common::PolicyCard::Liberal => data.shared.liberal_policies_count += 1,
+                                    }
                                 }
 
                                 data.state = ServerState::LegislativeSession {president, chancellor,

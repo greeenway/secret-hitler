@@ -51,7 +51,7 @@ cargo run --bin client local.yaml
 - [x] game over state
 - [x] policy peek
 - [x] chaos phase
-- [ ] veto power
+- [x] veto power
 - [x] block players from joining
 - [x] observer state
 - [x] execution
